@@ -3,6 +3,8 @@ namespace USTHBStudy.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using USTHBStudy.Domain.Academic;
+using USTHBStudy.Domain.Admin;
+using USTHBStudy.Domain.Contributions;
 using USTHBStudy.Domain.Documents;
 using USTHBStudy.Domain.Students;
 using USTHBStudy.Domain.Subscriptions;
@@ -41,6 +43,11 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, 
     public DbSet<SubscriptionPlan> SubscriptionPlans => Set<SubscriptionPlan>();
     public DbSet<Subscription> Subscriptions => Set<Subscription>();
     public DbSet<Payment> Payments => Set<Payment>();
+
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<Contribution> Contributions => Set<Contribution>();
+    public DbSet<DocumentReport> DocumentReports => Set<DocumentReport>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

@@ -3,8 +3,11 @@ namespace USTHBStudy.Infrastructure.Subscriptions;
 using System.Security.Cryptography;
 using Microsoft.EntityFrameworkCore;
 using USTHBStudy.Application.Abstractions;
+using USTHBStudy.Application.Admin;
 using USTHBStudy.Application.Common;
+using USTHBStudy.Application.Notifications;
 using USTHBStudy.Application.Subscriptions;
+using USTHBStudy.Domain.Admin;
 using USTHBStudy.Domain.Subscriptions;
 using USTHBStudy.Infrastructure.Persistence;
 
@@ -13,17 +16,23 @@ public sealed class SubscriptionService : ISubscriptionService
     private readonly AppDbContext _db;
     private readonly IPaymentProvider _paymentProvider;
     private readonly IAccessControlService _access;
+    private readonly INotificationService _notifications;
+    private readonly IAuditLogger _audit;
     private readonly IDateTimeProvider _clock;
 
     public SubscriptionService(
         AppDbContext db,
         IPaymentProvider paymentProvider,
         IAccessControlService access,
+        INotificationService notifications,
+        IAuditLogger audit,
         IDateTimeProvider clock)
     {
         _db = db;
         _paymentProvider = paymentProvider;
         _access = access;
+        _notifications = notifications;
+        _audit = audit;
         _clock = clock;
     }
 
@@ -172,6 +181,17 @@ public sealed class SubscriptionService : ISubscriptionService
         }
 
         await _db.SaveChangesAsync(ct);
+
+        await _audit.WriteAsync("payment.approved", "Payment", payment.Id.ToString(),
+            new { payment.Amount, payment.Currency, subscription?.EndsAt }, ct);
+        if (subscription is not null)
+        {
+            await _notifications.NotifyAsync(payment.UserId, NotificationType.SubscriptionActivated,
+                "Abonnement activé",
+                $"Votre abonnement Premium est actif jusqu'au {subscription.EndsAt:dd/MM/yyyy}.",
+                "/subscribe", ct);
+        }
+
         return await GetAdminPaymentAsync(payment.Id, ct);
     }
 
@@ -194,6 +214,7 @@ public sealed class SubscriptionService : ISubscriptionService
         }
 
         await _db.SaveChangesAsync(ct);
+        await _audit.WriteAsync("payment.rejected", "Payment", payment.Id.ToString(), new { note }, ct);
         return await GetAdminPaymentAsync(payment.Id, ct);
     }
 

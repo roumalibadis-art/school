@@ -7,6 +7,7 @@ using Microsoft.Extensions.Options;
 using USTHBStudy.Application.Abstractions;
 using USTHBStudy.Application.Authorization;
 using USTHBStudy.Application.Common;
+using USTHBStudy.Application.Admin;
 using USTHBStudy.Application.Documents;
 using USTHBStudy.Application.Students;
 using USTHBStudy.Domain.Documents;
@@ -21,6 +22,7 @@ public sealed class DocumentService : IDocumentService
     private readonly IActivityService _activity;
     private readonly IAccessControlService _access;
     private readonly IDownloadTokenService _downloadTokens;
+    private readonly IAuditLogger _audit;
     private readonly IDateTimeProvider _clock;
     private readonly DocumentOptions _options;
     private readonly ILogger<DocumentService> _logger;
@@ -33,6 +35,7 @@ public sealed class DocumentService : IDocumentService
         IActivityService activity,
         IAccessControlService access,
         IDownloadTokenService downloadTokens,
+        IAuditLogger audit,
         IDateTimeProvider clock,
         IOptions<DocumentOptions> options,
         ILogger<DocumentService> logger)
@@ -44,6 +47,7 @@ public sealed class DocumentService : IDocumentService
         _activity = activity;
         _access = access;
         _downloadTokens = downloadTokens;
+        _audit = audit;
         _clock = clock;
         _options = options.Value;
         _logger = logger;
@@ -257,6 +261,7 @@ public sealed class DocumentService : IDocumentService
             throw new BadRequestException("A document without a stored file cannot be published.");
         }
 
+        var previous = document.Status;
         document.Status = target;
         document.ReviewNote = change.Note?.Trim();
 
@@ -266,6 +271,10 @@ public sealed class DocumentService : IDocumentService
         }
 
         await _db.SaveChangesAsync(ct);
+        await _audit.WriteAsync(
+            $"document.{target.ToString().ToLowerInvariant()}", "Document", id.ToString(),
+            new { from = previous.ToString(), note = change.Note }, ct);
+
         return Map(document);
     }
 

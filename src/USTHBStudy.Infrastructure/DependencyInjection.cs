@@ -8,14 +8,18 @@ using USTHBStudy.Application.Abstractions;
 using USTHBStudy.Application.Academic;
 using USTHBStudy.Application.Admin;
 using USTHBStudy.Application.Auth;
+using USTHBStudy.Application.Contributions;
 using USTHBStudy.Application.Documents;
+using USTHBStudy.Application.Notifications;
 using USTHBStudy.Application.Search;
 using USTHBStudy.Application.Students;
 using USTHBStudy.Application.Subscriptions;
 using USTHBStudy.Infrastructure.Academic;
 using USTHBStudy.Infrastructure.Admin;
 using USTHBStudy.Infrastructure.Auth;
+using USTHBStudy.Infrastructure.Contributions;
 using USTHBStudy.Infrastructure.Documents;
+using USTHBStudy.Infrastructure.Notifications;
 using USTHBStudy.Infrastructure.Search;
 using USTHBStudy.Infrastructure.Students;
 using USTHBStudy.Infrastructure.Subscriptions;
@@ -55,6 +59,13 @@ public static class DependencyInjection
         services.AddSingleton<IPaymentProvider, ManualPaymentProvider>();
         services.AddScoped<ISubscriptionPlanService, SubscriptionPlanService>();
         services.AddScoped<ISubscriptionService, SubscriptionService>();
+
+        services.AddScoped<IAuditLogger, AuditLogger>();
+        services.AddScoped<IAuditQueryService, AuditQueryService>();
+        services.AddScoped<INotificationService, NotificationService>();
+        services.AddScoped<IContributionService, ContributionService>();
+        services.AddScoped<IReportService, ReportService>();
+        services.AddScoped<IAdminDashboardService, AdminDashboardService>();
 
         AddAcademic(services);
 

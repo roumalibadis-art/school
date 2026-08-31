@@ -3,6 +3,7 @@ namespace USTHBStudy.API.Controllers.Documents;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using USTHBStudy.API.Controllers;
+using USTHBStudy.Application.Abstractions;
 using USTHBStudy.Application.Authorization;
 using USTHBStudy.Application.Common;
 using USTHBStudy.Application.Documents;
@@ -13,8 +14,15 @@ public sealed class DocumentsController : ApiControllerBase
     private const long UploadSizeLimitBytes = 60L * 1024 * 1024;
 
     private readonly IDocumentService _documents;
+    private readonly IReportService _reports;
+    private readonly ICurrentUser _currentUser;
 
-    public DocumentsController(IDocumentService documents) => _documents = documents;
+    public DocumentsController(IDocumentService documents, IReportService reports, ICurrentUser currentUser)
+    {
+        _documents = documents;
+        _reports = reports;
+        _currentUser = currentUser;
+    }
 
     /// <summary>Lists documents. Anonymous/students see only published; staff can filter by status (PRD §14/§15).</summary>
     [HttpGet]
@@ -90,6 +98,14 @@ public sealed class DocumentsController : ApiControllerBase
         await _documents.LinkSolutionAsync(parentId, solutionId, ct);
         return Ok(ApiResponse.Ok("Solution linked."));
     }
+
+    /// <summary>Report a problem with a document (PRD §39/§40).</summary>
+    [HttpPost("{slug}/report")]
+    [Authorize]
+    public async Task<ActionResult<ApiResponse<ReportDto>>> Report(string slug, SubmitReportRequest request, CancellationToken ct) =>
+        Ok(ApiResponse.Data(
+            await _reports.SubmitAsync(slug, _currentUser.UserId, request.Reason, request.Comment, ct),
+            "Merci, votre signalement a été transmis."));
 
     [HttpDelete("{id:guid}")]
     [Authorize(Policy = Permissions.Documents.Delete)]

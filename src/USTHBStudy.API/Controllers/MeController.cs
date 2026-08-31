@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using USTHBStudy.Application.Abstractions;
 using USTHBStudy.Application.Common;
+using USTHBStudy.Application.Contributions;
 using USTHBStudy.Application.Students;
 
 [Authorize]
@@ -12,12 +13,15 @@ public sealed class MeController : ApiControllerBase
 {
     private readonly IStudentService _students;
     private readonly IActivityService _activity;
+    private readonly IContributionService _contributions;
     private readonly ICurrentUser _currentUser;
 
-    public MeController(IStudentService students, IActivityService activity, ICurrentUser currentUser)
+    public MeController(
+        IStudentService students, IActivityService activity, IContributionService contributions, ICurrentUser currentUser)
     {
         _students = students;
         _activity = activity;
+        _contributions = contributions;
         _currentUser = currentUser;
     }
 
@@ -42,4 +46,9 @@ public sealed class MeController : ApiControllerBase
     [HttpGet("history")]
     public async Task<ActionResult<ApiResponse<HistoryDto>>> History(CancellationToken ct) =>
         Ok(ApiResponse.Data(await _activity.GetHistoryAsync(UserId, ct)));
+
+    /// <summary>My submitted contributions and their status (PRD §37).</summary>
+    [HttpGet("contributions")]
+    public async Task<ActionResult<ApiResponse<IReadOnlyList<ContributionDto>>>> Contributions(CancellationToken ct) =>
+        Ok(ApiResponse.Data(await _contributions.ListMineAsync(UserId, ct)));
 }
