@@ -19,6 +19,8 @@ public sealed class DocumentService : IDocumentService
     private readonly IPdfProcessor _pdf;
     private readonly ICurrentUser _currentUser;
     private readonly IActivityService _activity;
+    private readonly IAccessControlService _access;
+    private readonly IDownloadTokenService _downloadTokens;
     private readonly IDateTimeProvider _clock;
     private readonly DocumentOptions _options;
     private readonly ILogger<DocumentService> _logger;
@@ -29,6 +31,8 @@ public sealed class DocumentService : IDocumentService
         IPdfProcessor pdf,
         ICurrentUser currentUser,
         IActivityService activity,
+        IAccessControlService access,
+        IDownloadTokenService downloadTokens,
         IDateTimeProvider clock,
         IOptions<DocumentOptions> options,
         ILogger<DocumentService> logger)
@@ -38,6 +42,8 @@ public sealed class DocumentService : IDocumentService
         _pdf = pdf;
         _currentUser = currentUser;
         _activity = activity;
+        _access = access;
+        _downloadTokens = downloadTokens;
         _clock = clock;
         _options = options.Value;
         _logger = logger;
@@ -303,6 +309,48 @@ public sealed class DocumentService : IDocumentService
 
         var stream = await _storage.OpenReadAsync(document.PreviewStorageKey, ct);
         return new DocumentContent(stream, "image/png", $"{document.Slug}-preview.png");
+    }
+
+    public async Task<DownloadTicket> RequestDownloadAsync(string slug, CancellationToken ct = default)
+    {
+        var userId = _currentUser.UserId ?? throw new UnauthorizedAppException("Sign in to download this document.");
+
+        var document = await _db.Documents.AsNoTracking().FirstOrDefaultAsync(d => d.Slug == slug, ct)
+                       ?? throw new NotFoundException("Document", slug);
+        EnsureVisible(document);
+
+        var user = await _db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId, ct)
+                   ?? throw new UnauthorizedAppException();
+
+        _access.EnsureCanAccess(document.IsPremium, new AccessSubject(user.IsActive, user.IsPremium, user.PremiumExpiresAt));
+
+        var lifetime = TimeSpan.FromSeconds(_options.DownloadLinkSeconds);
+        var expiresAt = _clock.UtcNow.Add(lifetime);
+
+        var presigned = await _storage.TryCreatePresignedUrlAsync(document.FileStorageKey, lifetime, document.FileName, ct);
+        var url = presigned?.ToString()
+                  ?? $"/api/files?t={Uri.EscapeDataString(_downloadTokens.Issue(
+                      new DownloadGrant(document.FileStorageKey, document.Id, userId, expiresAt)))}";
+
+        await _db.Documents.Where(d => d.Id == document.Id)
+            .ExecuteUpdateAsync(s => s.SetProperty(d => d.DownloadCount, d => d.DownloadCount + 1), ct);
+        await _activity.RecordDocumentDownloadAsync(userId, document.Id, ct);
+
+        return new DownloadTicket(url, expiresAt, document.FileName);
+    }
+
+    public async Task<DocumentContent> OpenDownloadAsync(string token, CancellationToken ct = default)
+    {
+        var grant = _downloadTokens.Verify(token)
+                    ?? throw new UnauthorizedAppException("This download link is invalid or has expired.");
+
+        var meta = await _db.Documents.IgnoreQueryFilters().AsNoTracking()
+            .Where(d => d.Id == grant.DocumentId)
+            .Select(d => new { d.FileName, d.MimeType })
+            .FirstOrDefaultAsync(ct);
+
+        var stream = await _storage.OpenReadAsync(grant.StorageKey, ct);
+        return new DocumentContent(stream, meta?.MimeType ?? "application/octet-stream", meta?.FileName ?? "document");
     }
 
     private async Task<(string? PreviewKey, string? ThumbnailKey, int? PageCount)> TryRenderPreviewAsync(

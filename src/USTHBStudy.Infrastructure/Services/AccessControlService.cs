@@ -25,4 +25,14 @@ public sealed class AccessControlService : IAccessControlService
             throw new ForbiddenAppException("This account is disabled.");
         }
     }
+
+    public void EnsureCanAccess(bool isPremiumContent, AccessSubject subject)
+    {
+        EnsureAccountActive(subject);
+
+        if (isPremiumContent && !IsPremiumActive(subject))
+        {
+            throw new ForbiddenAppException("This resource requires an active Premium subscription.");
+        }
+    }
 }

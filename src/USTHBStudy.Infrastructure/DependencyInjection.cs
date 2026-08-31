@@ -6,11 +6,13 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using USTHBStudy.Application.Abstractions;
 using USTHBStudy.Application.Academic;
+using USTHBStudy.Application.Admin;
 using USTHBStudy.Application.Auth;
 using USTHBStudy.Application.Documents;
 using USTHBStudy.Application.Search;
 using USTHBStudy.Application.Students;
 using USTHBStudy.Infrastructure.Academic;
+using USTHBStudy.Infrastructure.Admin;
 using USTHBStudy.Infrastructure.Auth;
 using USTHBStudy.Infrastructure.Documents;
 using USTHBStudy.Infrastructure.Search;
@@ -39,7 +41,9 @@ public static class DependencyInjection
         services.AddScoped<DbSeeder>();
 
         services.AddSingleton<IPdfProcessor, PdfiumPdfProcessor>();
+        services.AddSingleton<IDownloadTokenService, HmacDownloadTokenService>();
         services.AddScoped<IDocumentService, DocumentService>();
+        services.AddScoped<IUserAdminService, UserAdminService>();
 
         services.AddScoped<IStudentService, StudentService>();
         services.AddScoped<IFavoriteService, FavoriteService>();
@@ -141,13 +145,17 @@ public static class DependencyInjection
     {
         var provider = configuration.GetSection(FileStorageOptions.SectionName)["Provider"] ?? "Local";
 
-        if (string.Equals(provider, "Local", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(provider, "S3", StringComparison.OrdinalIgnoreCase))
+        {
+            services.AddSingleton<IFileStorageService, S3FileStorageService>();
+        }
+        else if (string.Equals(provider, "Local", StringComparison.OrdinalIgnoreCase))
         {
             services.AddSingleton<IFileStorageService, LocalFileStorageService>();
-            return;
         }
-
-        throw new InvalidOperationException(
-            $"Storage provider '{provider}' is not available yet. Use 'Local'. The S3-compatible provider lands in Phase 3.");
+        else
+        {
+            throw new InvalidOperationException($"Unknown Storage:Provider '{provider}'. Use 'Local' or 'S3'.");
+        }
     }
 }

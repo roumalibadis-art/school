@@ -18,6 +18,12 @@ public interface IAccessControlService
 
     /// <summary>Throws <see cref="Common.ForbiddenAppException"/> if the account is disabled (PRD §61-#4).</summary>
     void EnsureAccountActive(AccessSubject subject);
+
+    /// <summary>
+    /// Throws <see cref="Common.ForbiddenAppException"/> if the account is disabled, or if the content
+    /// is Premium and the subject has no active Premium subscription (PRD §23/§24/§61-#1/#5).
+    /// </summary>
+    void EnsureCanAccess(bool isPremiumContent, AccessSubject subject);
 }
 
 /// <summary>Minimal account facts needed for an access decision — keeps this port free of entity types.</summary>

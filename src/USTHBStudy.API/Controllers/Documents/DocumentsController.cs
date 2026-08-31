@@ -42,6 +42,15 @@ public sealed class DocumentsController : ApiControllerBase
         return File(content.Stream, content.ContentType);
     }
 
+    /// <summary>
+    /// Authorizes the caller and returns a short-lived download URL (PRD §29). 401 if not signed in,
+    /// 403 if suspended or the document is Premium and the caller has no active subscription.
+    /// </summary>
+    [HttpGet("{slug}/download")]
+    [Authorize]
+    public async Task<ActionResult<ApiResponse<DownloadTicket>>> RequestDownload(string slug, CancellationToken ct) =>
+        Ok(ApiResponse.Data(await _documents.RequestDownloadAsync(slug, ct)));
+
     [HttpPost]
     [Authorize(Policy = Permissions.Documents.Create)]
     [Consumes("multipart/form-data")]

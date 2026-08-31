@@ -23,4 +23,13 @@ public interface IDocumentService
 
     /// <summary>The first-page preview image (PRD §31). Available for published documents.</summary>
     Task<DocumentContent> OpenPreviewAsync(string slug, CancellationToken ct = default);
+
+    /// <summary>
+    /// Authorizes the caller (auth + account-active + Premium — PRD §29/§61) and returns a
+    /// short-lived download URL: a native presigned URL (S3) or an API-brokered signed link (local).
+    /// </summary>
+    Task<DownloadTicket> RequestDownloadAsync(string slug, CancellationToken ct = default);
+
+    /// <summary>Streams a file for a valid, unexpired download token (PRD §29).</summary>
+    Task<DocumentContent> OpenDownloadAsync(string token, CancellationToken ct = default);
 }

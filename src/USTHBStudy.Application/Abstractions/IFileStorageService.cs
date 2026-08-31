@@ -21,6 +21,14 @@ public interface IFileStorageService
     Task<bool> ExistsAsync(string storageKey, CancellationToken ct = default);
 
     Task DeleteAsync(string storageKey, CancellationToken ct = default);
+
+    /// <summary>
+    /// For providers that natively issue time-boxed URLs (S3): a presigned GET URL for
+    /// <paramref name="storageKey"/>. Returns <c>null</c> for the local provider — the caller then
+    /// brokers the download through the API with a signed token (PRD §29).
+    /// </summary>
+    Task<Uri?> TryCreatePresignedUrlAsync(
+        string storageKey, TimeSpan lifetime, string? downloadFileName, CancellationToken ct = default);
 }
 
 /// <summary>Result of a successful save: the key to persist plus basic size/type facts.</summary>
