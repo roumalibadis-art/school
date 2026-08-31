@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using USTHBStudy.Domain.Academic;
 using USTHBStudy.Domain.Documents;
+using USTHBStudy.Domain.Students;
 using USTHBStudy.Infrastructure.Identity;
 using USTHBStudy.Infrastructure.Persistence.Entities;
 
@@ -32,6 +33,9 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, 
     public DbSet<Module> Modules => Set<Module>();
 
     public DbSet<Document> Documents => Set<Document>();
+
+    public DbSet<Favorite> Favorites => Set<Favorite>();
+    public DbSet<UserActivity> UserActivities => Set<UserActivity>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

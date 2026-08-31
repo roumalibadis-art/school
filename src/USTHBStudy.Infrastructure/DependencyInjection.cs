@@ -9,10 +9,12 @@ using USTHBStudy.Application.Academic;
 using USTHBStudy.Application.Auth;
 using USTHBStudy.Application.Documents;
 using USTHBStudy.Application.Search;
+using USTHBStudy.Application.Students;
 using USTHBStudy.Infrastructure.Academic;
 using USTHBStudy.Infrastructure.Auth;
 using USTHBStudy.Infrastructure.Documents;
 using USTHBStudy.Infrastructure.Search;
+using USTHBStudy.Infrastructure.Students;
 using USTHBStudy.Infrastructure.Identity;
 using USTHBStudy.Infrastructure.Persistence;
 using USTHBStudy.Infrastructure.Persistence.Interceptors;
@@ -38,6 +40,10 @@ public static class DependencyInjection
 
         services.AddSingleton<IPdfProcessor, PdfiumPdfProcessor>();
         services.AddScoped<IDocumentService, DocumentService>();
+
+        services.AddScoped<IStudentService, StudentService>();
+        services.AddScoped<IFavoriteService, FavoriteService>();
+        services.AddScoped<IActivityService, ActivityService>();
 
         AddAcademic(services);
 

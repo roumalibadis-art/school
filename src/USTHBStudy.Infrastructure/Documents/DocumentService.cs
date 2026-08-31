@@ -8,6 +8,7 @@ using USTHBStudy.Application.Abstractions;
 using USTHBStudy.Application.Authorization;
 using USTHBStudy.Application.Common;
 using USTHBStudy.Application.Documents;
+using USTHBStudy.Application.Students;
 using USTHBStudy.Domain.Documents;
 using USTHBStudy.Infrastructure.Persistence;
 
@@ -17,6 +18,7 @@ public sealed class DocumentService : IDocumentService
     private readonly IFileStorageService _storage;
     private readonly IPdfProcessor _pdf;
     private readonly ICurrentUser _currentUser;
+    private readonly IActivityService _activity;
     private readonly IDateTimeProvider _clock;
     private readonly DocumentOptions _options;
     private readonly ILogger<DocumentService> _logger;
@@ -26,6 +28,7 @@ public sealed class DocumentService : IDocumentService
         IFileStorageService storage,
         IPdfProcessor pdf,
         ICurrentUser currentUser,
+        IActivityService activity,
         IDateTimeProvider clock,
         IOptions<DocumentOptions> options,
         ILogger<DocumentService> logger)
@@ -34,6 +37,7 @@ public sealed class DocumentService : IDocumentService
         _storage = storage;
         _pdf = pdf;
         _currentUser = currentUser;
+        _activity = activity;
         _clock = clock;
         _options = options.Value;
         _logger = logger;
@@ -198,6 +202,11 @@ public sealed class DocumentService : IDocumentService
         {
             await _db.Documents.Where(d => d.Id == document.Id)
                 .ExecuteUpdateAsync(s => s.SetProperty(d => d.ViewCount, d => d.ViewCount + 1), ct);
+
+            if (_currentUser.UserId is { } viewerId)
+            {
+                await _activity.RecordDocumentViewAsync(viewerId, document.Id, ct);
+            }
         }
 
         return Map(document);

@@ -23,8 +23,30 @@ public static class FactoryExtensions
     public static Task<HttpClient> StudentClientAsync(this ApiFactory factory) =>
         factory.LoggedInClientAsync(ApiFactory.StudentEmail, ApiFactory.StudentPassword);
 
-    /// <summary>Creates University → Faculty → Department → Specialty → Level → Semester → Module and returns the module id.</summary>
-    public static async Task<Guid> CreateModuleAsync(this HttpClient admin)
+    /// <summary>Registers a brand-new student and returns an authenticated client + the account email.</summary>
+    public static async Task<(HttpClient Client, string Email)> NewStudentClientAsync(this ApiFactory factory)
+    {
+        var client = factory.CreateClient();
+        var email = $"stud-{Guid.NewGuid():N}@example.local";
+        var register = await client.PostAsJsonAsync("/api/auth/register", new
+        {
+            email,
+            password = "passw0rd",
+            confirmPassword = "passw0rd",
+            firstName = "Test",
+            lastName = "Student",
+        });
+        register.EnsureSuccessStatusCode();
+        var body = await register.ReadEnvelopeAsync<AuthResultDto>();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", body.Data!.AccessToken);
+        return (client, email);
+    }
+
+    public sealed record AcademicTree(
+        Guid UniversityId, Guid FacultyId, Guid DepartmentId, Guid SpecialtyId, Guid LevelId, Guid SemesterId, Guid ModuleId);
+
+    /// <summary>Creates University → Faculty → Department → Specialty → Level → Semester → Module.</summary>
+    public static async Task<AcademicTree> CreateAcademicTreeAsync(this HttpClient admin)
     {
         var tag = Guid.NewGuid().ToString("N")[..8];
 
@@ -36,9 +58,15 @@ public static class FactoryExtensions
             new { name = $"L1 {tag}", shortName = "L1", cycle = "Licence", order = 1, specialtyId = specialty, isActive = true });
         var semester = await Post(admin, "/api/semesters",
             new { name = $"S1 {tag}", shortName = "S1", order = 1, levelId = level, isActive = true });
-        return await Post(admin, "/api/modules",
+        var module = await Post(admin, "/api/modules",
             new { name = $"Module {tag}", coefficient = 2.0, credits = 6, semesterId = semester, specialtyId = specialty, isActive = true });
+
+        return new AcademicTree(university, faculty, department, specialty, level, semester, module);
     }
+
+    /// <summary>Convenience: just the module id from a fresh academic tree.</summary>
+    public static async Task<Guid> CreateModuleAsync(this HttpClient admin) =>
+        (await admin.CreateAcademicTreeAsync()).ModuleId;
 
     private static async Task<Guid> Post(HttpClient client, string url, object payload)
     {
