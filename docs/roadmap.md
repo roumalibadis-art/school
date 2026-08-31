@@ -3,7 +3,7 @@
 > Living document. `[x]` done · `[~]` in progress · `[ ]` not started.
 > Phase order is fixed by PRD §65 — do not skip. A PRD §83 report is appended at each phase boundary.
 
-**Current status:** Phase 7 — Admin (starting)
+**Current status:** Phase 8 — Quality (starting)
 
 ---
 
@@ -79,11 +79,17 @@
       downloads and reported by `/api/me` (§24)
 - [x] Frontend: `/pricing` (real plans), `/subscribe` (checkout status + instructions), dashboard section
 
-## Phase 7 — Admin  `[ ]`
+## Phase 7 — Admin  `[x]`
 
-- [ ] Dashboard stats + charts (§32, §69), user management (§33)
-- [ ] Contributions + moderation (§37, §38), reports (§39)
-- [ ] Subscription/payment admin (§25), audit log (§42), analytics
+- [x] `GET /api/admin/dashboard` — §32/§69 stats + 30-day series + top modules/docs/specialties; `/admin` UI
+- [x] User management (§33): list (search/filters), detail, roles, suspend/premium; `/admin/users`
+- [x] Contributions (§37) + moderation (§38): student `/contribute`, `/api/admin/contributions` approve→document / reject
+- [x] Reports (§39/§40): `POST /api/documents/{slug}/report`, `/api/admin/reports` resolve/dismiss; `/admin/reports`
+- [x] Payment admin UI (§25): `/admin/payments` (approve/reject), `/admin/plans` (CRUD)
+- [x] Audit log (§42): `AuditLog` + `IAuditLogger` wired into ~10 admin actions; `GET /api/admin/audit`, `/admin/audit`
+- [x] In-app notifications (§41): `Notification` + bell; fired on contribution/payment/report events
+- [~] Email notification provider (§41) — deferred; in-app only for now
+- [~] Broadcast "new document" notifications by specialty — deferred (needs a fan-out job)
 
 ## Phase 8 — Quality  `[ ]`
 
@@ -329,3 +335,51 @@ Live-verified the whole flow through the frontend.
 
 **Next phase** — Phase 7: admin dashboard + analytics (§32/§69), user management (§33),
 contributions + moderation (§37/§38), reports (§39), audit log (§42), admin UI.
+
+### Phase 7 — Admin — completed 2026-08-31
+
+**Implemented (backend)**
+- `AuditLog` + `IAuditLogger` (actor/action/entity/JSON metadata; failures logged not thrown) +
+  `IAuditQueryService`. Wired into: document publish/reject/archive, payment approve/reject,
+  user suspend/restore/roles/premium, contribution approve/reject, report resolve/dismiss.
+  `GET /api/admin/audit` (`Audit.View`).
+- `Notification` + `INotificationService` (in-app, §41). `GET /api/me/notifications` + `unread-count`
+  + `POST read`. Fired on contribution approve/reject, payment approve (`SubscriptionActivated`),
+  report resolved.
+- `Contribution` (§37) + `IContributionService`: student `POST /api/contributions` (multipart, file
+  validated + hashed + stored), `GET /api/me/contributions`; admin `GET /api/admin/contributions`,
+  `approve` (opens the stored file → `DocumentService.UploadAsync` → optional publish → links back →
+  notifies → deletes the staging copy) / `reject` (`Contribution.Moderate`).
+- `DocumentReport` (§39/§40) + `IReportService`: `POST /api/documents/{slug}/report`,
+  admin `GET /api/admin/reports` + `resolve` (`Report.Resolve`, notifies the reporter, audits).
+- `IAdminDashboardService`: `GET /api/admin/dashboard` — total/active/premium users + conversion,
+  document counts, views/downloads, revenue, active subscriptions, pending contributions, open
+  reports; 30-day signup/revenue/download series; top-5 modules/documents/specialties. Aggregation
+  done client-side for MySQL/SQLite portability (flagged as a Phase 8 perf item).
+- `IUserAdminService` extended: `ListAsync` (search + role/active/premium filters), `GetAsync`
+  (detail: profile, favourites/subscription counts, last activity), `SetRolesAsync`. `AdminUsersController`.
+- `AdminFeatures` migration (AuditLogs, Notifications, Contributions, DocumentReports).
+
+**Implemented (frontend)**
+- `/admin` — role-guarded layout + sidebar; dashboard (stat cards, CSS sparklines, top lists);
+  `/admin/users` (+ detail with Server-Action controls for suspend/premium/roles);
+  `/admin/contributions`, `/admin/reports`, `/admin/payments`, `/admin/plans` (CRUD), `/admin/audit`.
+- `/contribute` — student submission form with async module search + "my contributions" panel.
+- Header `NotificationBell` (polls, dropdown, mark-all-read), document `ReportButton`, "Admin" link
+  for staff. Route handlers `/api/notif`, `/api/report`; admin mutations via Server Actions.
+
+**Tests** — Passed: 101 (52 unit + 49 integration). New `AdminTests` (5): contribution → approve →
+document + notification; report → resolve → audit entry; dashboard stats; user search + role change
+→ audit; student → moderation endpoints all 403. `next build`: 34 routes, type-check clean.
+
+**Deviations from PRD**
+- Email notifications (§41) not built — in-app only. Broadcast "new document per specialty"
+  notifications deferred (needs a background fan-out).
+- Approved contributions record the moderator (not the original student) as `UploadedById`.
+- Dashboard "top" lists aggregate in memory — fine at current scale, move to indexed SQL in Phase 8.
+- Academic-CRUD auditing not wired (lower value; the high-value admin actions are covered).
+
+**Known issues** — none.
+
+**Next phase** — Phase 8: security audit vs §44/§61, performance (N+1, pagination, indexes, §70),
+responsive + RTL (§49/§73), SEO, accessibility (§71), upload-abuse tests, frontend test suite.

@@ -115,17 +115,19 @@ POST /api/admin/payments/{id}/approve  { note }   # → Success + activates/stac
 POST /api/admin/payments/{id}/reject   { note }
 POST /api/admin/subscriptions/{id}/extend { days }
 
-# Contributions & reports (Phase 7)
-POST /api/contributions
-POST /api/reports
+# Contributions & reports (Phase 7 — live)
+POST /api/contributions               # student, multipart (Title/Type/ModuleId/Description/File)
+GET  /api/me/contributions
+POST /api/documents/{slug}/report     { reason, comment }
+GET  /api/me/notifications  (+ /unread-count, POST /read?id=)   # §41
 
-# Admin (Phase 7) — require permission policies
-GET  /api/admin/dashboard
-GET  /api/admin/users            PUT /api/admin/users/{id}
-GET  /api/admin/documents        POST/PUT/DELETE /api/admin/documents[/{id}]
-GET  /api/admin/contributions    POST /api/admin/contributions/{id}/approve|reject
-GET  /api/admin/payments         POST /api/admin/payments/{id}/approve|reject
-CRUD /api/admin/academic/*       # universities … modules … sessions
+# Admin (Phase 7 — live)
+GET  /api/admin/dashboard                              # Users.View
+GET  /api/admin/users?search=&role=&isActive=&isPremium=       GET /api/admin/users/{id}
+PUT  /api/admin/users/{id}/roles   { roles: [] }       # Users.Update
+GET  /api/admin/contributions?status=   POST /api/admin/contributions/{id}/approve|reject   # Contribution.Moderate
+GET  /api/admin/reports?status=          POST /api/admin/reports/{id}/resolve   { status, note }  # Report.Resolve
+GET  /api/admin/audit?action=&entityType=             # AuditLog.View
 ```
 
 ## Authorization policies (§43)

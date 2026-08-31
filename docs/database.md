@@ -80,7 +80,10 @@ unique `Slug`, `FileHashSha256`, `(Status, IsPremium, CreatedAt)`, `(ModuleId, T
   `Features`, `DisplayOrder`, `IsActive`, soft delete; unique `Slug`), `Subscriptions` (`Status`,
   `StartsAt`/`EndsAt`, duration+price snapshot; idx `(UserId,Status)`, `EndsAt`),
   `Payments` (§26: `TransactionReference` unique, `Status`, `PaidAt`, `AdminNote`; idx `(Status,CreatedAt)`).
-- **Phase 7 — Ops:** `Notifications` (§41), `Contributions` (§37), `DocumentReports` (§39), `AuditLogs` (§42).
+- **Phase 7 — Ops (created):** `AuditLogs` (§42: actor/action/entityType/entityId/metadata JSON;
+  idx `OccurredAt`, `(EntityType,EntityId)`, `Action`), `Notifications` (§41: idx `(UserId,IsRead,CreatedAt)`),
+  `Contributions` (§37: file key+hash, `Status`, `CreatedDocumentId`; idx `(Status,CreatedAt)`),
+  `DocumentReports` (§39/§40: `Reason`, `Status`, `ResolvedById`; idx `(Status,CreatedAt)`, `DocumentId`).
 
 ## Indexing plan (§53)
 

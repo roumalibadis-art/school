@@ -4,10 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-**Phases 1–6 complete; Phase 7 (Admin) starting.** See `docs/roadmap.md` for per-phase status and the
-PRD §83 reports. Backend: build green, **96 tests** pass, 5 migrations applied to local MySQL, sample
-USTHB tree + 4 subscription plans seeded (Development). Frontend: `frontend/` Next.js 15, cookie auth +
-student dashboard + favorites + PDF viewer + Premium checkout, `next build` clean. PRD §61 tests #1–#7 covered.
+**Phases 1–7 complete; Phase 8 (Quality) starting.** See `docs/roadmap.md` for per-phase status and the
+PRD §83 reports. Backend: build green, **101 tests** pass, 6 migrations applied to local MySQL. Frontend:
+`frontend/` Next.js 15 — public site + student area (dashboard/favorites/PDF viewer/Premium checkout/
+contribute) + `/admin` console (dashboard, users, contributions, reports, payments, plans, audit).
+`next build` clean (34 routes). PRD §61 tests #1–#7 covered; audit log + in-app notifications live.
 
 **`PRD.md` is the single source of truth.** Read it before making architectural decisions. It is numbered in sections (1–84); cite sections when justifying choices. The workflow it mandates (see below) is binding, not advisory. Confirmed deviations: **net8.0** target, **no Docker** (§58), S3/search/payment adapters land in their feature phases.
 
