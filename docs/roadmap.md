@@ -3,7 +3,7 @@
 > Living document. `[x]` done · `[~]` in progress · `[ ]` not started.
 > Phase order is fixed by PRD §65 — do not skip. A PRD §83 report is appended at each phase boundary.
 
-**Current status:** Phase 5 — Student experience (starting)
+**Current status:** Phase 6 — Premium (starting)
 
 ---
 
@@ -58,11 +58,17 @@
 - [x] SSR (server components) + per-page `generateMetadata` (title/description/canonical/OG) + `robots.ts` + dynamic `sitemap.ts` (§16)
 - [x] Stub pages for login/register/legal marked "bientôt" (§79); `/api/*` proxied to the API in dev
 
-## Phase 5 — Student experience  `[ ]`
+## Phase 5 — Student experience  `[x]`
 
-- [ ] Registration with academic profile (§19), `/dashboard` (§20), personalization (§21)
-- [ ] Favorites (§27), history (§28)
-- [ ] Authorized download → signed URL (§29), PDF viewer (§30)
+- [x] Academic profile (§19): `PUT /api/me` + FKs on `AspNetUsers`; frontend register → complete-profile flow with dependent dropdowns
+- [x] `/dashboard` (§20) — my modules, recent resources, popular exams, favorites count, subscription state; personalized by specialty + level (§21)
+- [x] Favorites (§27): `Favorite` (unique per user+kind+entity), `GET/POST/DELETE /api/favorites`, toggle UI
+- [x] History (§28): `UserActivity` (views upserted, downloads appended), `GET /api/me/history`
+- [x] Authorized download → short-lived signed link (§29): `IAccessControlService.EnsureCanAccess`,
+      HMAC token service, `GET /api/documents/{slug}/download` + `GET /api/files`, S3 presigned path
+- [x] `S3FileStorageService` (AWSSDK.S3) — config-selectable, MinIO-compatible
+- [x] PDF viewer (§30): native browser viewer via `/dl/{slug}?inline=1` in an iframe (pagination/zoom/search/fullscreen)
+- [x] Cookie-based frontend auth (httpOnly), middleware guard + token refresh; `/api/admin/users/{id}/{premium,suspend,restore}`
 
 ## Phase 6 — Premium  `[ ]`
 
@@ -238,3 +244,47 @@ real seeded data.
 
 **Next phase** — Phase 5: registration + academic profile, `/dashboard`, personalization, favorites,
 history, authorized download → signed URL (§29), S3 storage adapter, PDF viewer.
+
+### Phase 5 — Student experience — completed 2026-08-31
+
+**Implemented (backend)**
+- Academic-profile FKs on `AspNetUsers` (`University`…`Level`, nullable, RESTRICT) + `StudentFeatures`
+  migration. `IStudentService`: `GET/PUT /api/me` (full `StudentProfileDto` with resolved refs),
+  `GET /api/me/dashboard` (my modules = specialty+level's semesters; recent + popular-exam docs in the
+  specialty; favorites count; subscription state — `none|active|expired`), `GET /api/me/history`.
+- `Favorite` (unique `(UserId,Kind,EntityId)`) + `IFavoriteService` (idempotent add, target-exists
+  check) → `GET/POST/DELETE /api/favorites`. `UserActivity` + `IActivityService` (views/module upserted,
+  downloads appended; document views recorded on authed `GET /api/documents/{slug}`).
+- Access control: `IAccessControlService.EnsureCanAccess(isPremiumContent, subject)` → 403 for
+  disabled account or Premium content without an active subscription. `IDownloadTokenService`
+  (HMAC-SHA256, 120 s, constant-time verify). `DocumentService.RequestDownloadAsync` (auth →
+  account-active → Premium check → presigned S3 URL *or* `/api/files?t=<token>`; bumps `DownloadCount`,
+  records activity) + `OpenDownloadAsync`. `GET /api/documents/{slug}/download`, `GET /api/files`.
+- `S3FileStorageService` (AWSSDK.S3): AWS + MinIO (`ServiceUrl` + path-style), presigned GET URLs;
+  `Storage:Provider = S3` switches it on.
+- `IUserAdminService` + `/api/admin/users/{id}/{premium,suspend,restore}` — grant/revoke Premium
+  (extends from the later of now / current expiry), suspend (also revokes refresh tokens).
+
+**Implemented (frontend)**
+- httpOnly cookie sessions via Server Actions (login/register/logout/update-profile); `middleware.ts`
+  guards `/dashboard`,`/favorites`,`/profile` and refreshes near-expired access tokens.
+- Pages: real login/register forms, `/profile` (dependent university→level dropdowns), `/dashboard`,
+  `/favorites`, `/documents/[slug]/view` (browser PDF viewer in an iframe — §30). `FavoriteButton`,
+  header `UserMenu` (public pages stay static). Route handlers `/api/session`, `/api/fav`,
+  `/dl/[slug]` (session → download ticket → stream; `?inline=1` for the viewer).
+
+**Tests** — Passed: 91 (52 unit + 39 integration). Failed: 0.
+New: `HmacDownloadTokenServiceTests` (6), `StudentTests` (5), `DownloadTests` (7).
+§61 now covered: **#1** free→premium 403, **#2** anon download 401, **#3** student→admin 403,
+**#4** suspended 403, **#5** expired-premium 403, **#6** tampered token 401, **#7** refresh reuse 401.
+`next build`: 24 routes, type-check clean. Full student flow verified against the running stack.
+
+**Deviations from PRD**
+- S3 is implemented but unexercised locally (no S3/MinIO endpoint) — `Local` remains the dev default.
+- PDF viewer uses the browser's native viewer (satisfies §30's feature list) rather than a bundled pdf.js.
+- Frontend has no automated tests yet (→ Phase 8).
+
+**Known issues** — none.
+
+**Next phase** — Phase 6: `SubscriptionPlan`/`Subscription`/`Payment`, admin-configurable plans,
+`IPaymentProvider` + manual verification, subscription-driven Premium, premium UI.

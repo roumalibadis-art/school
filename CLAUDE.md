@@ -4,10 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-**Phases 1–4 complete; Phase 5 (student experience) starting.** See `docs/roadmap.md` for per-phase
-status and the PRD §83 reports. Backend: build green, 71 tests pass, 3 migrations applied to local MySQL,
-sample USTHB tree seeded (Development). Frontend: `frontend/` Next.js 15 app, `next build` clean,
-verified against the running API.
+**Phases 1–5 complete; Phase 6 (Premium) starting.** See `docs/roadmap.md` for per-phase status and the
+PRD §83 reports. Backend: build green, **91 tests** pass, 4 migrations applied to local MySQL, sample
+USTHB tree seeded (Development). Frontend: `frontend/` Next.js 15, cookie auth + student dashboard +
+favorites + PDF viewer, `next build` clean. PRD §61 security tests #1–#7 all covered.
 
 **`PRD.md` is the single source of truth.** Read it before making architectural decisions. It is numbered in sections (1–84); cite sections when justifying choices. The workflow it mandates (see below) is binding, not advisory. Confirmed deviations: **net8.0** target, **no Docker** (§58), S3/search/payment adapters land in their feature phases.
 
@@ -32,7 +32,7 @@ Revenue model is paid student accounts, so a Premium subscription system with se
 | Auth | ASP.NET Core Identity + JWT (refresh tokens where appropriate) |
 | Backend libs | FluentValidation, Serilog, Swagger/OpenAPI |
 | Frontend | Next.js + TypeScript + Tailwind CSS (SSR for public/SEO pages) |
-| File storage | S3-compatible behind `IFileStorageService`; `LocalFileStorageService` active (S3 impl deferred to Phase 5, with signed downloads) |
+| File storage | `IFileStorageService`: `LocalFileStorageService` (dev default) + `S3FileStorageService` (AWSSDK.S3, MinIO-compatible); `Storage:Provider` switches. Downloads → `IAccessControlService` + HMAC-signed link or S3 presigned URL |
 | PDF preview | `IPdfProcessor` → `PdfiumPdfProcessor` (PDFtoImage, native pdfium bundled) |
 | Search | MySQL-based behind `ISearchService`; pluggable for Meilisearch later (impl: Phase 4) |
 | Infra | `dotnet` CLI + local MySQL service. No Docker (owner's call). |

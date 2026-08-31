@@ -93,11 +93,17 @@ Only `Published` documents are searchable.
 # Public
 GET  /api/exams                GET /api/exams/{slug}   # frontend currently uses /api/documents?type=Exam
 
-# Student (Phase 5)
-GET  /api/me   PUT /api/me
-GET  /api/favorites   POST /api/favorites   DELETE /api/favorites/{id}
-GET  /api/documents/{slug}/download          # → authz → signed URL (§29)
-GET  /api/history
+# Student (Phase 5 — live)
+GET  /api/me                       PUT /api/me                    # profile + academic profile (§19)
+GET  /api/me/dashboard             GET /api/me/history            # §20/§21, §28
+GET  /api/favorites   POST /api/favorites   DELETE /api/favorites?kind=&entityId=   # §27
+GET  /api/documents/{slug}/download    # [Authorize] → account-active + Premium check → { url, expiresAtUtc, fileName }
+GET  /api/files?t=<token>             # [AllowAnonymous] the signed token is the credential (§29)
+
+# Admin (Phase 5 — live; full user mgmt is Phase 7)
+POST   /api/admin/users/{id}/premium   { months }      # Subscription.Manage
+DELETE /api/admin/users/{id}/premium
+POST   /api/admin/users/{id}/suspend | /restore        # User.Suspend
 
 # Premium (Phase 6)
 GET  /api/subscriptions/plans

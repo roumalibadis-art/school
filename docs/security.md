@@ -40,8 +40,9 @@ The backend must stay correct even if the frontend is fully attacker-controlled 
 | 7 | Expired / revoked / reused refresh token | `401`, token chain invalidated |
 | 8 | Registration/login flooding | Rate-limited |
 
-Phase 1 implements and tests #2, #3, #6 (partial), #7. #1, #4, #5 land with their features and are
-added to the suite then — but `IAccessControlService` and its unit tests encode the logic from Phase 1.
+As of Phase 5, **#1–#7 are all implemented and tested** (`DownloadTests`, `AuthorizationTests`,
+`AuthEndpointsTests`, `AccessControlServiceTests`, `HmacDownloadTokenServiceTests`). #8 (auth flooding
+= rate limiter) is wired but its dedicated test is deferred to Phase 8.
 
 ## Secret inventory
 
