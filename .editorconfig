@@ -30,5 +30,7 @@ dotnet_style_prefer_conditional_expression_over_return = false
 dotnet_diagnostic.CA1062.severity = none
 dotnet_diagnostic.CA1848.severity = none
 dotnet_diagnostic.CA2007.severity = none
+# CA1416: platform-compat lint aimed at libraries; this app only runs on Windows/Linux servers.
+dotnet_diagnostic.CA1416.severity = none
 # Unused usings are errors (paired with TreatWarningsAsErrors)
 dotnet_diagnostic.IDE0005.severity = warning

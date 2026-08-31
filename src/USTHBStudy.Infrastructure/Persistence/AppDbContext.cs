@@ -3,6 +3,7 @@ namespace USTHBStudy.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using USTHBStudy.Domain.Academic;
+using USTHBStudy.Domain.Documents;
 using USTHBStudy.Infrastructure.Identity;
 using USTHBStudy.Infrastructure.Persistence.Entities;
 
@@ -29,6 +30,8 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, 
     public DbSet<AcademicYear> AcademicYears => Set<AcademicYear>();
     public DbSet<Session> Sessions => Set<Session>();
     public DbSet<Module> Modules => Set<Module>();
+
+    public DbSet<Document> Documents => Set<Document>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

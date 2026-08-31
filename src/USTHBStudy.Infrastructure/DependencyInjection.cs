@@ -7,8 +7,10 @@ using Microsoft.Extensions.DependencyInjection;
 using USTHBStudy.Application.Abstractions;
 using USTHBStudy.Application.Academic;
 using USTHBStudy.Application.Auth;
+using USTHBStudy.Application.Documents;
 using USTHBStudy.Infrastructure.Academic;
 using USTHBStudy.Infrastructure.Auth;
+using USTHBStudy.Infrastructure.Documents;
 using USTHBStudy.Infrastructure.Identity;
 using USTHBStudy.Infrastructure.Persistence;
 using USTHBStudy.Infrastructure.Persistence.Interceptors;
@@ -31,6 +33,9 @@ public static class DependencyInjection
         services.AddScoped<IJwtTokenService, JwtTokenService>();
         services.AddScoped<IAccessControlService, AccessControlService>();
         services.AddScoped<DbSeeder>();
+
+        services.AddSingleton<IPdfProcessor, PdfiumPdfProcessor>();
+        services.AddScoped<IDocumentService, DocumentService>();
 
         AddAcademic(services);
 
@@ -64,6 +69,9 @@ public static class DependencyInjection
 
         services.AddOptions<FileStorageOptions>()
             .Bind(configuration.GetSection(FileStorageOptions.SectionName));
+
+        services.AddOptions<DocumentOptions>()
+            .Bind(configuration.GetSection(DocumentOptions.SectionName));
     }
 
     private static void AddPersistence(IServiceCollection services, IConfiguration configuration)

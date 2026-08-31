@@ -62,11 +62,27 @@ Resources: `universities`, `faculties`, `departments`, `domains`, `specialties`,
 `parentId` targets: faculties→university, departments/domains→faculty, specialties→department,
 levels→specialty, semesters→level, modules→semester **or** specialty. `academic-years`/`sessions` have none.
 
+## Document endpoints (Phase 3 — live)
+
+| Method | Route | Auth | Notes |
+|---|---|---|---|
+| GET | `/api/documents?moduleId=&specialtyId=&academicYearId=&sessionId=&type=&status=&isPremium=&search=&page=&pageSize=` | public | non-staff see only `Published`; staff may filter by `status` (§14/§15) |
+| GET | `/api/documents/{slug}` | public | `Published` for anyone; other statuses → 404 unless staff. Increments `viewCount` |
+| GET | `/api/documents/{slug}/preview` | public | first-page PNG (§31) |
+| GET | `/api/documents/id/{id}` | `Document.Update` | staff fetch by id (any status) |
+| POST | `/api/documents` | `Document.Create` | `multipart/form-data`: `File` + metadata fields. Creates a `Draft`. Response `message` warns if the file hash already exists (§75) |
+| PUT | `/api/documents/{id}` | `Document.Update` | metadata replace; slug regenerated iff title changed |
+| POST | `/api/documents/{id}/status` | `Document.Publish` | body `{ status, note }` — `Published` / `Rejected` / `Archived` |
+| POST | `/api/documents/{parentId}/solutions/{solutionId}` | `Document.Update` | links a solution to its exam (§13) |
+| DELETE | `/api/documents/{id}` | `Document.Delete` | soft delete |
+
+Upload constraints (§36): extensions `pdf`, `png`, `jpg`, `jpeg`; content sniffed against the extension;
+size ≤ `Documents:MaxFileSizeBytes` (50 MB default).
+
 ## Planned endpoints (later phases — from §46)
 
 ```
-# Public (Phase 3–4)
-GET  /api/documents            GET /api/documents/{slug}
+# Public (Phase 4)
 GET  /api/exams                GET /api/exams/{slug}
 GET  /api/search?q=...&<filters>
 

@@ -3,7 +3,7 @@
 > Living document. `[x]` done · `[~]` in progress · `[ ]` not started.
 > Phase order is fixed by PRD §65 — do not skip. A PRD §83 report is appended at each phase boundary.
 
-**Current status:** Phase 3 — Documents (starting)
+**Current status:** Phase 4 — Public website (starting)
 
 ---
 
@@ -39,14 +39,14 @@
 - [~] Caching of static academic data — **deferred to Phase 4** (belongs with the public read paths; admin views want fresh data) (§56)
 - [x] Indexes (§53), `AcademicStructure` migration applied to MySQL, sample USTHB tree seeded (Development), tests
 
-## Phase 3 — Documents  `[ ]`
+## Phase 3 — Documents  `[x]`
 
-- [ ] `Document` entity, `DocumentType` / `DocumentStatus` enums (§12)
-- [ ] Upload: server-side extension/MIME-sniff/size/name validation (§36)
-- [ ] SHA-256 hash + duplicate warning (§75, §76)
-- [ ] Local storage provider active; publishing workflow (Draft→PendingReview→Published/…) 
-- [ ] PDF first-page preview + thumbnail (§31)
-- [ ] Exam ↔ Solution linking (§13)
+- [x] `Document` entity, `DocumentType` / `DocumentStatus` / `RightsStatus` enums (§12, §40)
+- [x] Upload: server-side extension allow-list + magic-byte sniff + size cap (§36)
+- [x] SHA-256 hash + duplicate warning in the upload response (§75, §76)
+- [x] `LocalFileStorageService` active; publishing workflow (Draft → Published / Rejected / Archived)
+- [x] PDF first-page preview + thumbnail via pdfium (PDFtoImage), page count (§31)
+- [x] Exam ↔ Solution linking (§13); public preview endpoint; view-count tracking (§77)
 
 ## Phase 4 — Public website  `[ ]`
 
@@ -154,3 +154,46 @@ on modules, unique `Slug` per table, unique `StartYear` on academic years).
 **Known issues** — none.
 
 **Next phase** — Phase 3: `Document` entity, upload + validation + hashing, storage, PDF preview, publishing.
+
+### Phase 3 — Documents — completed 2026-08-31
+
+**Implemented**
+- `Document` entity (PRD §12 fields: storage keys, `PageCount`, `MimeType`, `FileHashSha256`, `IsPremium`,
+  `Status`, `Source`, `RightsStatus`/`PermissionNotes` per §40, `ViewCount`/`DownloadCount` per §77) +
+  `DocumentType` / `DocumentStatus` / `RightsStatus` enums; self-referencing exam↔solution link (§13).
+- `FileValidation` — extension allow-list (`pdf`, `png`, `jpg/jpeg`) **and** magic-byte sniff; the
+  client content type is never trusted (§36). Size cap from `Documents:MaxFileSizeBytes` (50 MB).
+- `IPdfProcessor` + `PdfiumPdfProcessor` (PDFtoImage / pdfium, native binaries bundled — no external
+  install): first-page preview PNG (1240px) + thumbnail (320px) + page count (§31). Preview failure is
+  non-fatal — the document still stores.
+- `DocumentService`: upload (validate → SHA-256 → duplicate lookup → store file → render → create Draft),
+  list with filters (module/specialty/year/session/type/premium/search — §15) and visibility (public →
+  Published only; staff → any status), get by slug (bumps `ViewCount`), metadata update, status change
+  (publish/reject/archive), solution linking, soft delete, preview streaming.
+- `DocumentsController` — `POST` multipart (`Document.Create`), `GET` list/detail/preview (public),
+  `PUT` (`Document.Update`), `POST /{id}/status` (`Document.Publish`), `POST /{id}/solutions/{id}`,
+  `DELETE` (`Document.Delete`). `Documents` migration applied to MySQL.
+- FluentValidation messages forced to English (server locale is now fr/ar-aware).
+
+**Tests** — Passed: 69 (44 unit + 25 integration). Failed: 0.
+New: `FileValidationTests` (6); `DocumentTests` (upload→render→draft→publish→public→preview; disguised
+executable → 400; duplicate → warning; student upload → 403; exam/solution link). Integration tests
+render a real generated PDF through pdfium.
+
+**Live smoke** — uploaded a PDF against MySQL: Draft, pageCount 1, preview 18 KB PNG served to anon
+after publish; file + preview + thumbnail written under `_storage/documents/exam/…`.
+
+**Database** — `20260831…_Documents` migration created and applied. Indexes: unique `Slug`,
+`FileHashSha256`, `(Status, IsPremium, CreatedAt)`, `(ModuleId, Type, Status)`, `(AcademicYearId, Type)`.
+
+**Security** — upload requires `Document.Create`; non-published documents return 404 to non-staff
+(existence not disclosed); content sniffing blocks disguised files.
+
+**Deviations from PRD**
+- S3 storage still deferred — `LocalFileStorageService` covers dev; the S3 adapter lands with the
+  signed-download flow in Phase 5.
+- Authorized download endpoint (§29) is Phase 5; Phase 3 exposes only the (safe) preview image.
+
+**Known issues** — none.
+
+**Next phase** — Phase 4: Next.js public site, homepage, browse pages, real `ISearchService`, SEO.

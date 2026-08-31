@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-**Phases 1–2 complete; Phase 3 (Documents) starting.** See `docs/roadmap.md` for per-phase status and
-the PRD §83 reports. Build green, 57 tests pass, both migrations applied to local MySQL, sample USTHB
-academic tree seeded in Development.
+**Phases 1–3 complete; Phase 4 (public website) starting.** See `docs/roadmap.md` for per-phase status
+and the PRD §83 reports. Build green, 69 tests pass, 3 migrations applied to local MySQL, sample USTHB
+academic tree seeded in Development. Document upload/preview (pdfium) verified live.
 
 **`PRD.md` is the single source of truth.** Read it before making architectural decisions. It is numbered in sections (1–84); cite sections when justifying choices. The workflow it mandates (see below) is binding, not advisory. Confirmed deviations: **net8.0** target, **no Docker** (§58), S3/search/payment adapters land in their feature phases.
 
@@ -31,7 +31,8 @@ Revenue model is paid student accounts, so a Premium subscription system with se
 | Auth | ASP.NET Core Identity + JWT (refresh tokens where appropriate) |
 | Backend libs | FluentValidation, Serilog, Swagger/OpenAPI |
 | Frontend | Next.js + TypeScript + Tailwind CSS (SSR for public/SEO pages) |
-| File storage | S3-compatible behind `IFileStorageService`; `LocalFileStorageService` for dev (S3 impl: Phase 3) |
+| File storage | S3-compatible behind `IFileStorageService`; `LocalFileStorageService` active (S3 impl deferred to Phase 5, with signed downloads) |
+| PDF preview | `IPdfProcessor` → `PdfiumPdfProcessor` (PDFtoImage, native pdfium bundled) |
 | Search | MySQL-based behind `ISearchService`; pluggable for Meilisearch later (impl: Phase 4) |
 | Infra | `dotnet` CLI + local MySQL service. No Docker (owner's call). |
 

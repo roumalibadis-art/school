@@ -63,11 +63,17 @@ Modules` — all extend a shared shape: `Id`, `Name`, `Slug` (unique), `IsActive
 (`Specialty.DomainId` is `SET NULL`). Indexes: every parent FK, `(SpecialtyId, Order)` on Levels,
 `(LevelId, Order)` on Semesters, `(SpecialtyId, SemesterId)` on Modules, unique `StartYear` on AcademicYears.
 
+## Documents table (Phase 3 — created)
+
+`Documents` (§12): `Id, Title, Slug (unique), Description, Type, Status, ModuleId, AcademicYearId?,
+SessionId?, FileStorageKey, PreviewStorageKey?, ThumbnailStorageKey?, FileName, FileSize, PageCount?,
+MimeType, FileHashSha256, IsPremium, Source?, RightsStatus, PermissionNotes?, UploadedById?, ReviewNote?,
+PublishedAt?, ViewCount, DownloadCount, SolutionForDocumentId? (self-FK, §13), IsDeleted/DeletedAt,
+CreatedAt/UpdatedAt`. FK to `Modules` is `RESTRICT`; `AcademicYears`/`Sessions` are `SET NULL`. Indexes:
+unique `Slug`, `FileHashSha256`, `(Status, IsPremium, CreatedAt)`, `(ModuleId, Type, Status)`,
+`(AcademicYearId, Type)`. Document tags moved to a later phase (not needed yet).
+
 ## Planned tables by phase (not yet created)
-- **Phase 3 — Documents:** `Documents` (§12: `Title, Slug, DocumentType, ModuleId, AcademicYearId, SessionId,
-  FileStorageKey, PreviewStorageKey, FileName, FileSize, PageCount, MimeType, FileHashSha256, IsPremium,
-  Status, Source, RightsStatus, PermissionNotes, UploadedById, ViewCount, DownloadCount`), `DocumentTags`,
-  `ExamSolutionLinks` (§13).
 - **Phase 5 — Engagement:** `Favorites` (unique `(UserId, EntityType, EntityId)`, §27), `ViewHistory`,
   `DownloadHistory` (§28).
 - **Phase 6 — Premium:** `SubscriptionPlans` (§22), `Subscriptions`, `Payments` (§26).

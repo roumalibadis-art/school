@@ -1,6 +1,7 @@
 namespace USTHBStudy.API.Extensions;
 
 using System.Threading.RateLimiting;
+using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi.Models;
 using USTHBStudy.API.Filters;
@@ -17,6 +18,9 @@ public static class ApiServiceExtensions
     {
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUser, CurrentUser>();
+
+        // Validators that live in the API assembly (e.g. multipart form models).
+        services.AddValidatorsFromAssembly(typeof(ApiServiceExtensions).Assembly, includeInternalTypes: true);
 
         services.AddControllers(options => options.Filters.Add<ValidationActionFilter>())
             .AddJsonOptions(options =>
