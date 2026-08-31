@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using USTHBStudy.Application.Authorization;
 using USTHBStudy.Application.Common;
 using USTHBStudy.Domain.Academic;
+using USTHBStudy.Domain.Subscriptions;
 using USTHBStudy.Infrastructure.Identity;
 
 /// <summary>
@@ -52,7 +53,26 @@ public sealed class DbSeeder
         if (includeSampleAcademicData)
         {
             await SeedAcademicSampleAsync(ct);
+            await SeedSubscriptionPlansAsync(ct);
         }
+    }
+
+    private async Task SeedSubscriptionPlansAsync(CancellationToken ct)
+    {
+        if (await _db.SubscriptionPlans.IgnoreQueryFilters().AnyAsync(ct))
+        {
+            return;
+        }
+
+        var features = "Tous les documents Premium\nCorrigés Premium\nSans engagement";
+        _db.SubscriptionPlans.AddRange(
+            new SubscriptionPlan { Name = "1 mois", Slug = "1-mois", DurationDays = 30, Price = 500m, Currency = "DZD", Features = features, DisplayOrder = 1 },
+            new SubscriptionPlan { Name = "3 mois", Slug = "3-mois", DurationDays = 90, Price = 1200m, Currency = "DZD", Features = features, DisplayOrder = 2 },
+            new SubscriptionPlan { Name = "6 mois", Slug = "6-mois", DurationDays = 180, Price = 2000m, Currency = "DZD", Features = features, DisplayOrder = 3 },
+            new SubscriptionPlan { Name = "Année universitaire", Slug = "annee-universitaire", DurationDays = 300, Price = 3000m, Currency = "DZD", Features = features, DisplayOrder = 4 });
+
+        await _db.SaveChangesAsync(ct);
+        _logger.LogInformation("Seeded 4 sample subscription plans.");
     }
 
     private async Task SeedRolesAndPermissionsAsync()

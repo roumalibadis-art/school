@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using USTHBStudy.Domain.Academic;
 using USTHBStudy.Domain.Documents;
 using USTHBStudy.Domain.Students;
+using USTHBStudy.Domain.Subscriptions;
 using USTHBStudy.Infrastructure.Identity;
 using USTHBStudy.Infrastructure.Persistence.Entities;
 
@@ -36,6 +37,10 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, 
 
     public DbSet<Favorite> Favorites => Set<Favorite>();
     public DbSet<UserActivity> UserActivities => Set<UserActivity>();
+
+    public DbSet<SubscriptionPlan> SubscriptionPlans => Set<SubscriptionPlan>();
+    public DbSet<Subscription> Subscriptions => Set<Subscription>();
+    public DbSet<Payment> Payments => Set<Payment>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

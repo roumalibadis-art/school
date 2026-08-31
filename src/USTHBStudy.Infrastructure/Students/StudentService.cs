@@ -143,6 +143,10 @@ public sealed class StudentService : IStudentService
         var roles = await _identity.GetRolesAsync(user.Id, ct);
         var permissions = await _identity.GetPermissionsAsync(user.Id, ct);
 
+        // Report the *effective* Premium state (PRD §24): the flag may be stale, the date rules.
+        var isPremiumActive = _access.IsPremiumActive(
+            new AccessSubject(user.IsActive, user.IsPremium, user.PremiumExpiresAt));
+
         return new StudentProfileDto(
             user.Id,
             user.Email ?? string.Empty,
@@ -150,7 +154,7 @@ public sealed class StudentService : IStudentService
             user.LastName,
             user.StudentId,
             user.IsActive,
-            user.IsPremium,
+            isPremiumActive,
             user.PremiumExpiresAt,
             await RefAsync<University>(user.UniversityId, ct),
             await RefAsync<Faculty>(user.FacultyId, ct),

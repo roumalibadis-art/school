@@ -11,12 +11,14 @@ using USTHBStudy.Application.Auth;
 using USTHBStudy.Application.Documents;
 using USTHBStudy.Application.Search;
 using USTHBStudy.Application.Students;
+using USTHBStudy.Application.Subscriptions;
 using USTHBStudy.Infrastructure.Academic;
 using USTHBStudy.Infrastructure.Admin;
 using USTHBStudy.Infrastructure.Auth;
 using USTHBStudy.Infrastructure.Documents;
 using USTHBStudy.Infrastructure.Search;
 using USTHBStudy.Infrastructure.Students;
+using USTHBStudy.Infrastructure.Subscriptions;
 using USTHBStudy.Infrastructure.Identity;
 using USTHBStudy.Infrastructure.Persistence;
 using USTHBStudy.Infrastructure.Persistence.Interceptors;
@@ -48,6 +50,11 @@ public static class DependencyInjection
         services.AddScoped<IStudentService, StudentService>();
         services.AddScoped<IFavoriteService, FavoriteService>();
         services.AddScoped<IActivityService, ActivityService>();
+
+        services.AddOptions<ManualPaymentOptions>().Bind(configuration.GetSection(ManualPaymentOptions.SectionName));
+        services.AddSingleton<IPaymentProvider, ManualPaymentProvider>();
+        services.AddScoped<ISubscriptionPlanService, SubscriptionPlanService>();
+        services.AddScoped<ISubscriptionService, SubscriptionService>();
 
         AddAcademic(services);
 
