@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { NotificationBell } from "@/components/notification-bell";
 import { Container } from "@/components/ui";
 import { UserMenu } from "@/components/user-menu";
 
@@ -7,6 +8,7 @@ const nav = [
   { href: "/modules", label: "Modules" },
   { href: "/documents", label: "Documents" },
   { href: "/exams", label: "Examens" },
+  { href: "/contribute", label: "Contribuer" },
   { href: "/pricing", label: "Premium" },
 ];
 
@@ -29,6 +31,7 @@ export function SiteHeader() {
           <Link href="/search" className="text-ink-muted no-underline hover:text-ink" aria-label="Recherche">
             Rechercher
           </Link>
+          <NotificationBell />
           <UserMenu />
         </div>
       </Container>

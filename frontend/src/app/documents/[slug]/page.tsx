@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { FavoriteButton } from "@/components/favorite-button";
+import { ReportButton } from "@/components/report-button";
 import { Badge, Card, Container, LinkButton } from "@/components/ui";
 import { apiGetOrNull } from "@/lib/api";
 import { documentTypeLabel, formatBytes, formatDate } from "@/lib/format";
@@ -100,6 +101,8 @@ export default async function DocumentPage({ params }: Params) {
             </p>
           </Card>
         ) : null}
+
+        <ReportButton slug={doc.slug} />
       </aside>
     </Container>
   );

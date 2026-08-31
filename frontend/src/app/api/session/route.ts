@@ -15,11 +15,12 @@ export async function GET() {
   if (!res.ok) return NextResponse.json({ authenticated: false });
 
   const body = (await res.json()) as {
-    data: { firstName: string; specialty: unknown; level: unknown };
+    data: { firstName: string; specialty: unknown; level: unknown; roles: string[] };
   };
   return NextResponse.json({
     authenticated: true,
     firstName: body.data.firstName,
     hasProfile: !!body.data.specialty && !!body.data.level,
+    isStaff: (body.data.roles ?? []).some((r) => r === "Admin" || r === "Moderator"),
   });
 }

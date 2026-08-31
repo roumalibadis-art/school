@@ -6,7 +6,7 @@ import { logoutAction } from "@/lib/auth-actions";
 
 type Session =
   | { authenticated: false }
-  | { authenticated: true; firstName: string; hasProfile: boolean };
+  | { authenticated: true; firstName: string; hasProfile: boolean; isStaff: boolean };
 
 export function UserMenu() {
   const [session, setSession] = useState<Session | null>(null);
@@ -33,6 +33,9 @@ export function UserMenu() {
 
   return (
     <div className="flex items-center gap-3">
+      {session.isStaff ? (
+        <Link href="/admin" className="text-ink-muted no-underline hover:text-ink">Admin</Link>
+      ) : null}
       <Link href="/dashboard" className="text-ink-muted no-underline hover:text-ink">
         {session.firstName}
       </Link>
