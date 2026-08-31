@@ -1,3 +1,5 @@
+import { cookies } from "next/headers";
+import { ACCESS_COOKIE } from "@/lib/session";
 import type { ApiEnvelope, Paged } from "@/lib/types";
 
 // Server-side base URL for the .NET API. Never exposed to the browser (browser calls go through
@@ -79,3 +81,26 @@ export async function apiGetPaged<T>(
 }
 
 export const previewImageUrl = (slug: string) => `/api/documents/${encodeURIComponent(slug)}/preview`;
+
+/** Server-side authenticated GET using the session cookie. Throws ApiError(401) when signed out. */
+export async function authedApiGet<T>(path: string, opts: { query?: Query } = {}): Promise<T> {
+  const token = (await cookies()).get(ACCESS_COOKIE)?.value;
+  if (!token) throw new ApiError(401, "Not authenticated");
+
+  const res = await fetch(`${API_URL}${path}${toQueryString(opts.query)}`, {
+    headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    let message = `${res.status}`;
+    try {
+      const body = (await res.json()) as { message?: string };
+      if (body?.message) message = body.message;
+    } catch {
+      /* ignore */
+    }
+    throw new ApiError(res.status, message);
+  }
+  const body = (await res.json()) as ApiEnvelope<T>;
+  return body.data;
+}

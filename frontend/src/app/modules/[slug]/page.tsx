@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { DocumentCard } from "@/components/cards";
+import { FavoriteButton } from "@/components/favorite-button";
 import { Badge, Container, EmptyState } from "@/components/ui";
 import { apiGetOrNull, apiGetPaged } from "@/lib/api";
 import { documentTypeLabel } from "@/lib/format";
@@ -39,7 +40,10 @@ export default async function ModulePage({ params }: Params) {
 
   return (
     <Container className="py-10">
-      <h1 className="text-2xl font-semibold">{module.name}</h1>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <h1 className="text-2xl font-semibold">{module.name}</h1>
+        <FavoriteButton kind="Module" entityId={module.id} />
+      </div>
       <p className="mt-2 flex flex-wrap gap-2 text-xs text-ink-muted">
         {module.code ? <Badge>{module.code}</Badge> : null}
         <Badge>Coeff. {module.coefficient}</Badge>

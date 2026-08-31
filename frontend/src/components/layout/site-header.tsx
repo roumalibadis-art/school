@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Container } from "@/components/ui";
+import { UserMenu } from "@/components/user-menu";
 
 const nav = [
   { href: "/faculties", label: "Facultés" },
@@ -28,12 +29,7 @@ export function SiteHeader() {
           <Link href="/search" className="text-ink-muted no-underline hover:text-ink" aria-label="Recherche">
             Rechercher
           </Link>
-          <Link
-            href="/login"
-            className="rounded-md border border-line px-3 py-1.5 no-underline hover:bg-paper-sunken"
-          >
-            Connexion
-          </Link>
+          <UserMenu />
         </div>
       </Container>
     </header>

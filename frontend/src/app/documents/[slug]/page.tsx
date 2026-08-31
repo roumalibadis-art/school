@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { FavoriteButton } from "@/components/favorite-button";
 import { Badge, Card, Container, LinkButton } from "@/components/ui";
 import { apiGetOrNull } from "@/lib/api";
 import { documentTypeLabel, formatBytes, formatDate } from "@/lib/format";
+import { getCurrentUser } from "@/lib/session";
 import type { DocumentDto } from "@/lib/types";
 
 type Params = { params: Promise<{ slug: string }> };
@@ -26,7 +28,10 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 
 export default async function DocumentPage({ params }: Params) {
   const { slug } = await params;
-  const doc = await apiGetOrNull<DocumentDto>(`/api/documents/${encodeURIComponent(slug)}`);
+  const [doc, user] = await Promise.all([
+    apiGetOrNull<DocumentDto>(`/api/documents/${encodeURIComponent(slug)}`),
+    getCurrentUser(),
+  ]);
   if (!doc) notFound();
 
   return (
@@ -61,9 +66,21 @@ export default async function DocumentPage({ params }: Params) {
 
       <aside className="space-y-4">
         <Card className="p-4">
-          <LinkButton href="/login" variant="primary" className="w-full">
-            {doc.isPremium ? "Se connecter pour accéder" : "Se connecter pour télécharger"}
-          </LinkButton>
+          {user ? (
+            <div className="space-y-2">
+              <LinkButton href={`/documents/${doc.slug}/view`} variant="primary" className="w-full">
+                Lire le document
+              </LinkButton>
+              <LinkButton href={`/dl/${encodeURIComponent(doc.slug)}`} variant="secondary" className="w-full">
+                Télécharger
+              </LinkButton>
+              <FavoriteButton kind="Document" entityId={doc.id} className="w-full justify-center" />
+            </div>
+          ) : (
+            <LinkButton href={`/login?next=/documents/${doc.slug}`} variant="primary" className="w-full">
+              {doc.isPremium ? "Se connecter pour accéder" : "Se connecter pour télécharger"}
+            </LinkButton>
+          )}
           <dl className="mt-4 space-y-2 text-sm">
             <Row label="Type" value={documentTypeLabel(doc.type)} />
             {doc.pageCount ? <Row label="Pages" value={String(doc.pageCount)} /> : null}
