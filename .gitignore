@@ -1,0 +1,66 @@
+# ---------- .NET ----------
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+*.user
+*.userosscache
+*.suo
+*.userprefs
+*.dll
+*.pdb
+project.lock.json
+project.fragment.lock.json
+artifacts/
+.vs/
+*.received.*
+
+# EF Core / SQLite dev artifacts
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+
+# Test results / coverage
+[Tt]est[Rr]esult*/
+coverage/
+*.coverage
+*.trx
+*.cobertura.xml
+
+# ---------- Node / Next.js ----------
+node_modules/
+.next/
+out/
+.turbo/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.eslintcache
+
+# ---------- Secrets / local config ----------
+.env
+.env.*
+!.env.example
+appsettings.*.local.json
+secrets.json
+
+# ---------- Local file storage (dev) ----------
+storage/
+_storage/
+uploads/
+
+# ---------- IDE / OS ----------
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
