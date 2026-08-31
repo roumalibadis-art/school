@@ -5,16 +5,20 @@ using USTHBStudy.API.Middleware;
 using USTHBStudy.Application;
 using USTHBStudy.Infrastructure;
 
+// A plain (non-reloadable) startup logger. Not CreateBootstrapLogger(): the reloadable logger
+// is frozen by AddSerilog and cannot be re-frozen when multiple hosts share a test process.
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
-    .CreateBootstrapLogger();
+    .CreateLogger();
 
 try
 {
     var builder = WebApplication.CreateBuilder(args);
 
-    builder.Host.UseSerilog((context, services, configuration) => configuration
-        .ReadFrom.Configuration(context.Configuration)
+    // AddSerilog (rather than Host.UseSerilog) builds a logger scoped to the DI container, which
+    // avoids the "logger is already frozen" clash when several hosts run in one test process.
+    builder.Services.AddSerilog((services, configuration) => configuration
+        .ReadFrom.Configuration(builder.Configuration)
         .ReadFrom.Services(services)
         .Enrich.FromLogContext()
         .Enrich.WithEnvironmentName()

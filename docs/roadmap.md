@@ -3,33 +3,33 @@
 > Living document. `[x]` done · `[~]` in progress · `[ ]` not started.
 > Phase order is fixed by PRD §65 — do not skip. A PRD §83 report is appended at each phase boundary.
 
-**Current status:** Phase 1 — Foundation (in progress)
+**Current status:** Phase 2 — Academic structure (starting)
 
 ---
 
-## Phase 0 — Analysis  `[~]`
+## Phase 0 — Analysis  `[x]`
 
 - [x] Inspect repository (only `PRD.md` present) and environment
-- [x] `git init`, `.gitignore`
+- [x] `git init`, `.gitignore`, `.gitattributes`
 - [x] `docs/architecture.md`, `docs/roadmap.md`, `docs/database.md`, `docs/api.md`, `docs/security.md`, `docs/deployment.md`
-- [x] Implementation plan agreed (autonomous, `net8.0`, local MySQL)
-- [ ] Commit Phase 0 deliverables
+- [x] Implementation plan agreed (autonomous, `net8.0`, local MySQL, no Docker)
+- [x] Commit Phase 0 deliverables
 
-## Phase 1 — Foundation  `[~]`
+## Phase 1 — Foundation  `[x]`
 
-- [ ] Solution + 4 src projects + 2 test projects, `Directory.Build.props`, CPM, `.editorconfig`, local `dotnet-ef`
-- [ ] `AppDbContext` + ASP.NET Core Identity (`ApplicationUser` with §9 fields, `ApplicationRole`)
-- [ ] JWT access + rotating refresh tokens
-- [ ] Roles + permission claims (`Admin`, `Moderator`, `Student`) + per-permission authorization policies
-- [ ] `IAccessControlService` skeleton (premium-active + role/ownership checks)
-- [ ] Serilog, Swagger (+ JWT), CORS, rate limiting, secure headers, global exception handling
-- [ ] Health checks `/health`, `/health/ready`, `/health/live`
-- [ ] `IFileStorageService` (local + S3 impls), `ISearchService` stub, `IPaymentProvider` stub
-- [ ] `DbSeeder` (roles always; demo users in Development)
-- [ ] Docker: API `Dockerfile`, `docker-compose.yml`, `.env.example`, `.dockerignore`
-- [ ] `InitialCreate` migration + applied to local MySQL
-- [ ] Unit + integration tests green; API smoke (register/login/refresh/me/401/403) verified
-- [ ] Phase 1 §83 report + commit
+- [x] Solution + 4 src projects + 2 test projects, `Directory.Build.props`, CPM, `.editorconfig`, local `dotnet-ef`
+- [x] `AppDbContext` + ASP.NET Core Identity (`ApplicationUser` with §9 fields, `ApplicationRole`)
+- [x] JWT access (HS256) + rotating, hashed, single-use refresh tokens
+- [x] Roles + permission claims (`Admin`, `Moderator`, `Student`) + per-permission authorization policies
+- [x] `IAccessControlService` + real premium-expiry rule (§24), unit-tested
+- [x] Serilog, Swagger (+ JWT), CORS, fixed-window rate limiting, secure headers, global exception handling
+- [x] Health checks `/health`, `/health/ready`, `/health/live`
+- [x] `IFileStorageService` + `LocalFileStorageService` (S3 impl deferred to Phase 3 — see report)
+- [x] `DbSeeder` (roles/permissions always; demo users in Development)
+- [x] `InitialCreate` migration + applied to local MySQL `usthbstudy`
+- [x] 40 tests green (26 unit + 14 integration); API smoke (health/register/login/refresh/me-401/probe-403/tamper-401/validation-400) verified
+- [x] Phase 1 §83 report + commit
+- [~] Docker — **excluded** by explicit user direction ("don't use docker, keep it simple"); deviates from PRD §58
 
 ## Phase 2 — Academic structure  `[ ]`
 
@@ -82,4 +82,43 @@
 
 ## Phase reports (§83)
 
-_Appended as phases complete._
+### Phase 1 — Foundation — completed 2026-08-31
+
+**Implemented**
+- Clean-architecture solution: `Domain` ← `Application` ← `Infrastructure` ← `API`, central package
+  management, `net8.0`, warnings-as-errors, `.editorconfig`, pinned local `dotnet-ef` 8.0.16.
+- Persistence: `AppDbContext` (Identity + `RefreshTokens`), Pomelo MySQL 8, auditing save-interceptor,
+  entity configs, `InitialCreate` migration applied to local `usthbstudy`.
+- Identity & auth: `ApplicationUser` with all PRD §9 fields; HS256 JWT access tokens; opaque refresh
+  tokens stored as SHA-256 hashes, single-use, rotating, with reuse → 401; lockout after 5 failures.
+- AuthZ: roles `Admin`/`Moderator`/`Student` seeded with `permission` claims; one policy per
+  permission; `IAccessControlService` centralizes the premium-active rule (PRD §24).
+- Cross-cutting: Serilog (console + rolling file), Swagger with bearer scheme, config-driven CORS,
+  fixed-window rate limiting (global + stricter `auth`), security headers, global exception middleware
+  producing the PRD §45 error body, `/health` + `/health/ready` (DB) + `/health/live`.
+- Storage: `IFileStorageService` + `LocalFileStorageService` (path-contained), provider-selected by config.
+- Seeding: idempotent roles/permissions always; demo users (`admin|moderator|student@example.local`)
+  only under Development.
+- API surface: `POST /api/auth/{register,login,refresh,logout}`, `GET /api/me`, `GET /api/diagnostics/*`.
+
+**Tests** — Passed: 40 (26 unit + 14 integration). Failed: 0.
+Integration tests run the real pipeline over SQLite in-memory. Security cases covered now:
+unauthenticated → 401, student → permission-gated → 403, tampered token → 401, refresh reuse → 401.
+
+**Database** — Migration created: yes (`20260831111724_InitialCreate`). Applied to MySQL: yes.
+
+**Security** — Verified: JWT validation params (issuer/audience/lifetime/signing key), secrets only in
+user-secrets, error responses carry no stack traces, rate limiter active (observed 429 under burst).
+
+**Deviations from PRD**
+- **Docker (§58) excluded** at the user's explicit request ("keep it simple"). Local dev is
+  `dotnet run` against the existing MySQL service.
+- **S3 storage impl deferred to Phase 3** (no value shipping untested cloud code in Phase 1; the
+  `IFileStorageService` port and provider switch exist).
+- **`ISearchService` / `IPaymentProvider` deferred** to Phases 4 / 6 respectively (their features).
+- **Immediate suspended-user rejection (§61-#4)** enforced on token refresh in Phase 1; per-request
+  DB enforcement lands with user management in Phase 7.
+
+**Known issues** — none blocking.
+
+**Next phase** — Phase 2: academic hierarchy entities + admin CRUD.

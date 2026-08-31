@@ -4,9 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-Greenfield. The repository currently contains only `PRD.md` — a detailed "MASTER PROMPT" that fully specifies the platform to be built. There is no code, no solution, no `.git`, and no `/docs` yet.
+**Phase 1 (Foundation) complete; Phase 2 (academic structure) starting.** See `docs/roadmap.md` for
+per-phase status and the PRD §83 reports. Build is green, 40 tests pass, schema is applied to local MySQL.
 
-**`PRD.md` is the single source of truth.** Read it before making architectural decisions. It is numbered in sections (1–84); cite sections when justifying choices. The workflow it mandates (see below) is binding, not advisory.
+**`PRD.md` is the single source of truth.** Read it before making architectural decisions. It is numbered in sections (1–84); cite sections when justifying choices. The workflow it mandates (see below) is binding, not advisory. Confirmed deviations: **net8.0** target, **no Docker** (§58), S3/search/payment adapters land in their feature phases.
+
+Execution mode is **autonomous phase-by-phase** (PRD §84) — continue through phases, pausing only on blockers or errors; post the §83 report at each boundary.
 
 ## What is being built
 
@@ -27,55 +30,59 @@ Revenue model is paid student accounts, so a Premium subscription system with se
 | Auth | ASP.NET Core Identity + JWT (refresh tokens where appropriate) |
 | Backend libs | FluentValidation, Serilog, Swagger/OpenAPI |
 | Frontend | Next.js + TypeScript + Tailwind CSS (SSR for public/SEO pages) |
-| File storage | S3-compatible object storage behind `IFileStorageService`; local impl for dev |
-| Search | MySQL-based behind `ISearchService`; pluggable for Meilisearch later |
-| Infra | Docker + docker-compose (frontend, backend, MySQL, storage), `.env.example` |
+| File storage | S3-compatible behind `IFileStorageService`; `LocalFileStorageService` for dev (S3 impl: Phase 3) |
+| Search | MySQL-based behind `ISearchService`; pluggable for Meilisearch later (impl: Phase 4) |
+| Infra | `dotnet` CLI + local MySQL service. No Docker (owner's call). |
 
 Deviate from this stack only with a strong technical reason, stated explicitly.
 
-## Planned repository layout (PRD §4, §8)
+## Repository layout
 
 ```
+USTHBStudy.sln
+Directory.Build.props / Directory.Packages.props   # shared build settings + central package versions
+.config/dotnet-tools.json                          # pinned dotnet-ef
 src/
-  USTHBStudy.API              # controllers, middleware, DI wiring — NO business logic
-  USTHBStudy.Application      # DTOs, services, interfaces, validators, use cases
   USTHBStudy.Domain           # entities, enums, domain rules — depends on NOTHING
-  USTHBStudy.Infrastructure   # EF Core, Identity, storage, payment, search impls
+  USTHBStudy.Application      # DTOs, use-case services, validators, ports (interfaces), Roles/Permissions
+  USTHBStudy.Infrastructure   # EF Core (AppDbContext, migrations), Identity, JWT, storage, seeding
+  USTHBStudy.API              # Program.cs, controllers, middleware, extensions — NO business logic
 tests/
-  USTHBStudy.UnitTests
-  USTHBStudy.IntegrationTests
-frontend/                     # Next.js app
-docs/                         # architecture.md, database.md, api.md, security.md, deployment.md, roadmap.md
-docker-compose.yml
+  USTHBStudy.UnitTests        # xUnit + FluentAssertions + NSubstitute
+  USTHBStudy.IntegrationTests # WebApplicationFactory over SQLite in-memory
+docs/                         # architecture, database, api, security, deployment, roadmap
+frontend/                     # Next.js app (Phase 4)
 ```
 
-Dependency direction is strictly `Domain ← Application ← Infrastructure ← API`. The Domain layer must not reference Infrastructure. The API layer must not contain business logic.
+Dependency direction is strictly `Domain ← Application ← Infrastructure ← API`, enforced by project
+references. Ports are declared in `Application/Abstractions`; implementations live in `Infrastructure`
+(and `ICurrentUser` in `API/Services` since it reads `HttpContext`).
 
-## Expected commands (once Phase 1 scaffolds the solution)
-
-These do not work yet — no solution exists. After scaffolding they will be:
+## Commands
 
 ```bash
-# Backend (run from repo root or src/)
-dotnet build
-dotnet test                                             # all tests
+# Backend — run from repo root
+dotnet tool restore                                     # once, restores pinned dotnet-ef 8.0.16
+dotnet build USTHBStudy.sln                             # warnings are errors
+dotnet test USTHBStudy.sln                              # all 40 tests (unit + integration/SQLite)
 dotnet test tests/USTHBStudy.UnitTests                  # one project
-dotnet test --filter "FullyQualifiedName~AccessControl" # one class/test
-dotnet run --project src/USTHBStudy.API
-dotnet ef migrations add <Name> --project src/USTHBStudy.Infrastructure --startup-project src/USTHBStudy.API
-dotnet ef database update --project src/USTHBStudy.Infrastructure --startup-project src/USTHBStudy.API
+dotnet test --filter "FullyQualifiedName~AccessControlServiceTests"   # one class
+dotnet run --project src/USTHBStudy.API --no-launch-profile           # http://localhost:5175  (/swagger, /health)
 
-# Frontend (from frontend/)
-npm install
-npm run dev
-npm run build
-npm run lint
+# EF migrations (startup project = API, so it picks up user-secrets)
+dotnet ef migrations add <Name> -p src/USTHBStudy.Infrastructure -s src/USTHBStudy.API
+dotnet ef database update       -p src/USTHBStudy.Infrastructure -s src/USTHBStudy.API
 
-# Full stack
-docker-compose up
+# Frontend (from frontend/ — added in Phase 4)
+npm install && npm run dev
 ```
 
-Keep this section updated with the real commands as the solution takes shape.
+**Local setup already done:** MySQL db `usthbstudy` + user `usthb_app` exist; the API's
+`ConnectionStrings:Default` and `Jwt:Secret` are in `dotnet user-secrets` (id `usthbstudy-api`).
+Dev demo accounts (Development only): `admin@example.local` / `Admin#2026!`,
+`moderator@example.local` / `Moderator#2026!`, `student@example.local` / `Student#2026!`.
+
+**No Docker** — the owner opted to keep the toolchain minimal (deviates from PRD §58).
 
 ## Non-negotiable design rules (from the PRD)
 

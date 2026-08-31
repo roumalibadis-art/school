@@ -5,9 +5,10 @@
 ## Local development (current machine)
 
 Prereqs already present: .NET SDK 9.0.300 (builds `net8.0`), MySQL 8 (`MySQL80` service, `localhost:3306`),
-Node 22, git. Docker is **not** installed — the compose path is optional.
+Node 22, git. **Docker is not used** for this project (explicit decision — keep the toolchain minimal);
+run everything with the `dotnet` CLI against the local MySQL service.
 
-### One-time setup
+### One-time setup (already done on the dev machine)
 
 ```sql
 -- run as MySQL root (mysql.exe is at "C:\Program Files\MySQL\MySQL Server 8.0\bin")
@@ -17,23 +18,22 @@ GRANT ALL PRIVILEGES ON usthbstudy.* TO 'usthb_app'@'localhost';
 FLUSH PRIVILEGES;
 ```
 
-```bash
-dotnet tool restore                                   # restores pinned dotnet-ef
+Secrets for the API project (stored by `dotnet user-secrets`, id `usthbstudy-api`, never committed):
 
-# secrets for the API project (never committed)
-cd src/USTHBStudy.API
-dotnet user-secrets set "ConnectionStrings:Default" "Server=localhost;Port=3306;Database=usthbstudy;User=usthb_app;Password=<password>;"
-dotnet user-secrets set "Jwt:Secret" "<random 48+ char string>"
-cd ../..
+```bash
+dotnet user-secrets --project src/USTHBStudy.API set "ConnectionStrings:Default" \
+  "Server=localhost;Port=3306;Database=usthbstudy;User=usthb_app;Password=<password>;TreatTinyAsBoolean=true;AllowUserVariables=true"
+dotnet user-secrets --project src/USTHBStudy.API set "Jwt:Secret" "<random 48+ char string>"
 ```
 
 ### Run
 
 ```bash
+dotnet tool restore                                                     # pinned dotnet-ef
 dotnet build USTHBStudy.sln
 dotnet ef database update -p src/USTHBStudy.Infrastructure -s src/USTHBStudy.API
-dotnet run --project src/USTHBStudy.API          # https://localhost:7xxx/swagger , /health
-dotnet test                                       # unit + integration (SQLite in-memory)
+dotnet run --project src/USTHBStudy.API --no-launch-profile             # http://localhost:5175/swagger , /health
+dotnet test USTHBStudy.sln                                             # 40 tests (SQLite in-memory for integration)
 ```
 
 Windows PowerShell equivalents are identical (the `dotnet` CLI is cross-shell).
@@ -51,29 +51,19 @@ Windows PowerShell equivalents are identical (the `dotnet` CLI is cross-shell).
 | `Storage:LocalRootPath` | appsettings | `./_storage` | git-ignored |
 | `Storage:S3:*` | secret / env | — | endpoint, bucket, keys, `ForcePathStyle` |
 | `Cors:AllowedOrigins` | appsettings | `http://localhost:3000` | array |
-| `RateLimiting:PermitPerMinute` | appsettings | `100` (global), `10` (auth) | |
+| `RateLimiting:PermitPerMinute` / `RateLimiting:AuthPermitPerMinute` | appsettings | `100` / `10` | per-IP fixed window |
 | `Seed:DemoUsers` | appsettings.Development | `true` | demo accounts (§52) |
 | `ASPNETCORE_ENVIRONMENT` | env | `Development` | |
 
-`.env.example` lists every variable for the container path; copy to `.env` (git-ignored) and fill in.
+For non-dev hosts, pass secrets as environment variables with `__` nesting
+(`ConnectionStrings__Default`, `Jwt__Secret`, `Storage__S3__AccessKey`, …). `.env` files are git-ignored.
 
-## Docker (§58) — written, not exercised locally
+## Containerisation (§58)
 
-`docker compose config` is validated in CI/verification; full `up` requires Docker Desktop.
-
-```
-docker-compose.yml
-  mysql      : mysql:8.0            volume mysql-data, healthcheck
-  minio      : S3-compatible storage (buckets on first run)
-  api        : build src/USTHBStudy.API/Dockerfile, depends_on mysql (healthy)
-  frontend   : added in Phase 4
-```
-
-```bash
-cp .env.example .env      # fill secrets
-docker compose up --build
-docker compose exec api dotnet ef database update   # or run migrations on startup (non-prod only)
-```
+Deferred. The PRD asks for Docker/compose; the project owner opted to keep the local toolchain
+minimal (`dotnet` + local MySQL). If containerisation is revisited later, the needed pieces are a
+multi-stage API `Dockerfile` (sdk → aspnet) and a compose file with `mysql`, an S3-compatible store
+(e.g. MinIO), `api`, and `frontend`. Configuration is already environment-variable friendly (below).
 
 ## Migrations strategy
 
