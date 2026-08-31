@@ -76,7 +76,10 @@ unique `Slug`, `FileHashSha256`, `(Status, IsPremium, CreatedAt)`, `(ModuleId, T
 ## Planned tables by phase (not yet created)
 - **Phase 5 — Engagement:** `Favorites` (unique `(UserId, EntityType, EntityId)`, §27), `ViewHistory`,
   `DownloadHistory` (§28).
-- **Phase 6 — Premium:** `SubscriptionPlans` (§22), `Subscriptions`, `Payments` (§26).
+- **Phase 6 — Premium (created):** `SubscriptionPlans` (§22: name/slug, `DurationDays`, `Price`+`Currency`,
+  `Features`, `DisplayOrder`, `IsActive`, soft delete; unique `Slug`), `Subscriptions` (`Status`,
+  `StartsAt`/`EndsAt`, duration+price snapshot; idx `(UserId,Status)`, `EndsAt`),
+  `Payments` (§26: `TransactionReference` unique, `Status`, `PaidAt`, `AdminNote`; idx `(Status,CreatedAt)`).
 - **Phase 7 — Ops:** `Notifications` (§41), `Contributions` (§37), `DocumentReports` (§39), `AuditLogs` (§42).
 
 ## Indexing plan (§53)

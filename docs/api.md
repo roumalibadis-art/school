@@ -105,10 +105,15 @@ POST   /api/admin/users/{id}/premium   { months }      # Subscription.Manage
 DELETE /api/admin/users/{id}/premium
 POST   /api/admin/users/{id}/suspend | /restore        # User.Suspend
 
-# Premium (Phase 6)
-GET  /api/subscriptions/plans
-POST /api/subscriptions                      # creates a pending payment record
-GET  /api/subscriptions/me
+# Premium (Phase 6 — live)
+GET  /api/subscriptions/plans                 # public; active plans, prices from DB (§22)
+POST /api/subscriptions   { planId }          # student; → { subscription, reference, instructions } (§25)
+GET  /api/subscriptions/me                    # student; current + history + effective premium + pending instructions
+CRUD /api/admin/subscription-plans            # Subscription.Manage
+GET  /api/admin/payments?status=&page=&pageSize=
+POST /api/admin/payments/{id}/approve  { note }   # → Success + activates/stacks Premium (§24)
+POST /api/admin/payments/{id}/reject   { note }
+POST /api/admin/subscriptions/{id}/extend { days }
 
 # Contributions & reports (Phase 7)
 POST /api/contributions

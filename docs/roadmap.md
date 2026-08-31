@@ -3,7 +3,7 @@
 > Living document. `[x]` done · `[~]` in progress · `[ ]` not started.
 > Phase order is fixed by PRD §65 — do not skip. A PRD §83 report is appended at each phase boundary.
 
-**Current status:** Phase 6 — Premium (starting)
+**Current status:** Phase 7 — Admin (starting)
 
 ---
 
@@ -70,11 +70,14 @@
 - [x] PDF viewer (§30): native browser viewer via `/dl/{slug}?inline=1` in an iframe (pagination/zoom/search/fullscreen)
 - [x] Cookie-based frontend auth (httpOnly), middleware guard + token refresh; `/api/admin/users/{id}/{premium,suspend,restore}`
 
-## Phase 6 — Premium  `[ ]`
+## Phase 6 — Premium  `[x]`
 
-- [ ] `SubscriptionPlan`, `Subscription`, `Payment` (§22, §26); admin-configurable plans/prices
-- [ ] `IPaymentProvider` + `ManualPaymentProvider`; admin approve/reject → activate/extend (§25)
-- [ ] Server-side expiration enforcement (§24); premium UI states; preview-only fallback (§30)
+- [x] `SubscriptionPlan` (admin CRUD, slug, soft delete, prices in DB), `Subscription`, `Payment` (§22, §26)
+- [x] `IPaymentProvider` + `ManualPaymentProvider` (reference + instructions); `/api/admin/payments`
+      approve/reject, `/api/admin/subscriptions/{id}/extend` (§25)
+- [x] Approval activates/stacks `user.PremiumExpiresAt`; `IsPremiumActive` (date-based) enforced on
+      downloads and reported by `/api/me` (§24)
+- [x] Frontend: `/pricing` (real plans), `/subscribe` (checkout status + instructions), dashboard section
 
 ## Phase 7 — Admin  `[ ]`
 
@@ -288,3 +291,41 @@ New: `HmacDownloadTokenServiceTests` (6), `StudentTests` (5), `DownloadTests` (7
 
 **Next phase** — Phase 6: `SubscriptionPlan`/`Subscription`/`Payment`, admin-configurable plans,
 `IPaymentProvider` + manual verification, subscription-driven Premium, premium UI.
+
+### Phase 6 — Premium — completed 2026-08-31
+
+**Implemented**
+- Entities: `SubscriptionPlan` (name/slug, `DurationDays`, `Price`+`Currency`, `Features`, `DisplayOrder`,
+  `IsActive`, soft delete — prices live in the DB, PRD §22), `Subscription`
+  (`Pending`/`Active`/`Expired`/`Cancelled`, snapshots duration + price), `Payment` (PRD §26:
+  `TransactionReference` `USTHB-XXXX`, status, `PaidAt`, `AdminNote`; no card data). `Premium` migration.
+- `IPaymentProvider` + `ManualPaymentProvider` (PRD §25): records a pending payment, returns
+  instructions + reference (bank/CCP details from `Payments:Manual` config). Premium is **never**
+  activated from a client-reported success.
+- `ISubscriptionPlanService` (CRUD, public list = active only) + `ISubscriptionService`:
+  `CheckoutAsync` (Pending sub + Pending payment + instructions; one pending per user),
+  `GetMineAsync` (current + history + effective-premium + pending instructions),
+  `ListPaymentsAsync` (`?status`), `ApprovePaymentAsync` (→ `Success`, activates & **stacks** on any
+  remaining Premium time — PRD §24), `RejectPaymentAsync` (→ `Failed`, cancels the sub),
+  `ExtendSubscriptionAsync` (admin, PRD §25).
+- Endpoints: `GET /api/subscriptions/plans` (public), `POST /api/subscriptions` + `GET /api/subscriptions/me`
+  (student), `/api/admin/subscription-plans` CRUD, `/api/admin/payments[?status]` +
+  `/{id}/approve|reject`, `/api/admin/subscriptions/{id}/extend` (all `Subscription.Manage`).
+- `/api/me` now reports the *effective* Premium state (date rules, PRD §24).
+- Frontend: `/pricing` (real plans, subscribe action), `/subscribe` (pending instructions / active
+  status), dashboard subscription section. `DbSeeder`: 4 sample DZD plans (Development).
+
+**Tests** — Passed: 96 (52 unit + 44 integration). New `SubscriptionTests` (5): full checkout →
+pending → not-premium (download 403) → admin approve → Premium active (download 200); reject cancels;
+duplicate checkout 409; unknown plan 404; student → plan management 403.
+Live-verified the whole flow through the frontend.
+
+**Deviations from PRD**
+- Preview-only fallback for Premium docs (PRD §30): free users already get the first-page preview +
+  metadata; the document detail page shows a "réservé aux abonnés" notice. No partial-PDF rendering.
+- Admin payment approval is API-only — the admin **UI** for it is Phase 7.
+
+**Known issues** — none.
+
+**Next phase** — Phase 7: admin dashboard + analytics (§32/§69), user management (§33),
+contributions + moderation (§37/§38), reports (§39), audit log (§42), admin UI.
