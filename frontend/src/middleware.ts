@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { ACCESS_COOKIE, REFRESH_COOKIE } from "@/lib/session";
 
 const API_URL = process.env.API_URL ?? "http://localhost:5178";
-const PROTECTED = ["/dashboard", "/favorites", "/profile"];
+const PROTECTED = ["/dashboard", "/favorites", "/profile", "/subscribe"];
 
 function isExpiringSoon(jwt: string): boolean {
   try {
@@ -61,5 +61,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/favorites/:path*", "/profile/:path*"],
+  matcher: ["/dashboard/:path*", "/favorites/:path*", "/profile/:path*", "/subscribe/:path*"],
 };

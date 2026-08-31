@@ -92,7 +92,18 @@ public sealed class SubscriptionService : ISubscriptionService
 
         var isActive = _access.IsPremiumActive(new AccessSubject(user.IsActive, user.IsPremium, user.PremiumExpiresAt));
 
-        return new MySubscriptionsDto(current, isActive, user.PremiumExpiresAt, dtos);
+        string? instructions = null;
+        var pending = subscriptions.FirstOrDefault(s => s.Status == SubscriptionStatus.Pending);
+        if (pending is not null && LatestPayment(pending) is { Status: PaymentStatus.Pending } payment)
+        {
+            var initiation = await _paymentProvider.InitiateAsync(
+                new PaymentInitiationRequest(
+                    payment.Id, userId, payment.Amount, payment.Currency, payment.TransactionReference, pending.Plan?.Name ?? "—"),
+                ct);
+            instructions = initiation.Instructions;
+        }
+
+        return new MySubscriptionsDto(current, isActive, user.PremiumExpiresAt, instructions, dtos);
     }
 
     public async Task<PagedResult<AdminPaymentDto>> ListPaymentsAsync(PaymentQuery query, CancellationToken ct = default)

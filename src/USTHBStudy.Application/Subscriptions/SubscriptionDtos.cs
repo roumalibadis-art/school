@@ -56,6 +56,7 @@ public sealed record MySubscriptionsDto(
     SubscriptionDto? Current,
     bool IsPremiumActive,
     DateTime? PremiumExpiresAt,
+    string? PendingPaymentInstructions,
     IReadOnlyList<SubscriptionDto> History);
 
 public sealed record AdminPaymentDto(

@@ -100,10 +100,25 @@ export default async function DashboardPage() {
         )}
       </section>
 
-      <section>
-        <SectionHeading title="Favoris" action={{ href: "/favorites", label: "Voir tout" }} />
-        <p className="text-sm text-ink-muted">{dash.favoritesCount} élément(s) enregistré(s).</p>
-      </section>
+      <div className="grid gap-6 sm:grid-cols-2">
+        <section>
+          <SectionHeading title="Favoris" action={{ href: "/favorites", label: "Voir tout" }} />
+          <p className="text-sm text-ink-muted">{dash.favoritesCount} élément(s) enregistré(s).</p>
+        </section>
+        <section>
+          <SectionHeading title="Abonnement" action={{ href: "/subscribe", label: "Gérer" }} />
+          <p className="text-sm text-ink-muted">
+            {dash.subscription.state === "active"
+              ? `Premium actif${dash.subscription.expiresAt ? ` jusqu'au ${formatDate(dash.subscription.expiresAt)}` : ""}.`
+              : dash.subscription.state === "expired"
+                ? "Votre abonnement Premium a expiré."
+                : "Compte gratuit."}
+          </p>
+          {dash.subscription.state !== "active" ? (
+            <Link href="/pricing" className="link mt-1 inline-block text-sm">Voir les offres Premium →</Link>
+          ) : null}
+        </section>
+      </div>
     </Container>
   );
 }
