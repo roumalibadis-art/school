@@ -4,9 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-**Phases 1–3 complete; Phase 4 (public website) starting.** See `docs/roadmap.md` for per-phase status
-and the PRD §83 reports. Build green, 69 tests pass, 3 migrations applied to local MySQL, sample USTHB
-academic tree seeded in Development. Document upload/preview (pdfium) verified live.
+**Phases 1–4 complete; Phase 5 (student experience) starting.** See `docs/roadmap.md` for per-phase
+status and the PRD §83 reports. Backend: build green, 71 tests pass, 3 migrations applied to local MySQL,
+sample USTHB tree seeded (Development). Frontend: `frontend/` Next.js 15 app, `next build` clean,
+verified against the running API.
 
 **`PRD.md` is the single source of truth.** Read it before making architectural decisions. It is numbered in sections (1–84); cite sections when justifying choices. The workflow it mandates (see below) is binding, not advisory. Confirmed deviations: **net8.0** target, **no Docker** (§58), S3/search/payment adapters land in their feature phases.
 
@@ -53,7 +54,7 @@ tests/
   USTHBStudy.UnitTests        # xUnit + FluentAssertions + NSubstitute
   USTHBStudy.IntegrationTests # WebApplicationFactory over SQLite in-memory
 docs/                         # architecture, database, api, security, deployment, roadmap
-frontend/                     # Next.js app (Phase 4)
+frontend/                     # Next.js 15 public site — App Router, Tailwind, src/lib/api.ts (server fetch)
 ```
 
 Dependency direction is strictly `Domain ← Application ← Infrastructure ← API`, enforced by project
@@ -66,17 +67,18 @@ references. Ports are declared in `Application/Abstractions`; implementations li
 # Backend — run from repo root
 dotnet tool restore                                     # once, restores pinned dotnet-ef 8.0.16
 dotnet build USTHBStudy.sln                             # warnings are errors
-dotnet test USTHBStudy.sln                              # all 40 tests (unit + integration/SQLite)
+dotnet test USTHBStudy.sln                              # all 71 tests (unit + integration/SQLite)
 dotnet test tests/USTHBStudy.UnitTests                  # one project
 dotnet test --filter "FullyQualifiedName~AccessControlServiceTests"   # one class
-dotnet run --project src/USTHBStudy.API --no-launch-profile           # http://localhost:5175  (/swagger, /health)
+dotnet run --project src/USTHBStudy.API                 # http://localhost:5178  (/swagger, /health)
 
 # EF migrations (startup project = API, so it picks up user-secrets)
 dotnet ef migrations add <Name> -p src/USTHBStudy.Infrastructure -s src/USTHBStudy.API
 dotnet ef database update       -p src/USTHBStudy.Infrastructure -s src/USTHBStudy.API
 
-# Frontend (from frontend/ — added in Phase 4)
-npm install && npm run dev
+# Frontend (from frontend/) — proxies /api/* to API_URL (default http://localhost:5178)
+cp .env.local.example .env.local && npm install && npm run dev   # http://localhost:3000
+npm run build                                                     # prod build + type-check
 ```
 
 **Local setup already done:** MySQL db `usthbstudy` + user `usthb_app` exist; the API's

@@ -3,7 +3,7 @@
 > Living document. `[x]` done · `[~]` in progress · `[ ]` not started.
 > Phase order is fixed by PRD §65 — do not skip. A PRD §83 report is appended at each phase boundary.
 
-**Current status:** Phase 4 — Public website (starting)
+**Current status:** Phase 5 — Student experience (starting)
 
 ---
 
@@ -48,12 +48,15 @@
 - [x] PDF first-page preview + thumbnail via pdfium (PDFtoImage), page count (§31)
 - [x] Exam ↔ Solution linking (§13); public preview endpoint; view-count tracking (§77)
 
-## Phase 4 — Public website  `[ ]`
+## Phase 4 — Public website  `[x]`
 
-- [ ] `frontend/` Next.js scaffold, design system components (§48)
-- [ ] Homepage (§18), browse pages (faculties/specialties/levels/modules/documents/exams)
-- [ ] `MySqlSearchService` real impl + filters (§14, §15)
-- [ ] SSR + SEO metadata / OG / canonical (§16)
+- [x] `MySqlSearchService` real impl (`LIKE` + year detection) + all §15 filters; `GET /api/search`
+- [x] Academic reference-data caching + invalidation on write (§56)
+- [x] `frontend/` Next.js 15 (App Router, TS, Tailwind, hand-built primitives — no component lib) (§48)
+- [x] Homepage (§18: hero + search + quick nav + popular modules + recent + why), browse pages
+      (faculties / faculty / specialty / modules / module / documents / document / exams / search)
+- [x] SSR (server components) + per-page `generateMetadata` (title/description/canonical/OG) + `robots.ts` + dynamic `sitemap.ts` (§16)
+- [x] Stub pages for login/register/legal marked "bientôt" (§79); `/api/*` proxied to the API in dev
 
 ## Phase 5 — Student experience  `[ ]`
 
@@ -197,3 +200,41 @@ after publish; file + preview + thumbnail written under `_storage/documents/exam
 **Known issues** — none.
 
 **Next phase** — Phase 4: Next.js public site, homepage, browse pages, real `ISearchService`, SEO.
+
+### Phase 4 — Public website — completed 2026-08-31
+
+**Implemented (backend)**
+- `ISearchService` + `MySqlSearchService`: `LIKE`-based search over `Published` documents with the full
+  §15 facet set (faculty → department → specialty → level → semester → module, type, academic year,
+  session, premium); a bare 4-digit token is matched as a year. `GET /api/search` (public).
+- Academic reference-data caching (§56): `AcademicCacheSignal` (version stamp) + `IMemoryCache` on the
+  search-free list path; every academic write bumps the version so reads never serve stale rows.
+
+**Implemented (frontend — `frontend/`)**
+- Next.js 15 App Router, TypeScript, Tailwind 3, hand-built UI primitives (`Container`, `Card`, `Badge`,
+  `Button`/`LinkButton`, `Pagination`, `SectionHeading`, `EmptyState`) + cards (`DocumentCard`,
+  `ModuleCard`, `FacultyCard`, `SearchResultRow`) + a client `SearchBox`. No component library (owner's call).
+- Server-side API client (`src/lib/api.ts`) with envelope unwrap, 404→null, ISR revalidate; browser
+  calls (preview images, search) proxied through `/api/*` rewrite to the .NET API.
+- Pages: `/` (hero + search + quick-nav + popular modules + recent documents + "why"),
+  `/faculties`, `/faculties/[slug]`, `/specialties/[slug]`, `/modules`, `/modules/[slug]`,
+  `/documents` (+ type filter), `/documents/[slug]` (preview image, premium notice, metadata),
+  `/exams`, `/search`, `/pricing`, `/about`, legal stubs, `not-found`.
+- SEO: `metadataBase` + templated titles, per-page `generateMetadata` (description, canonical, OG with
+  preview image), `robots.ts`, dynamic `sitemap.ts` enumerating faculties/specialties/modules/documents.
+- French UI copy; `lang="fr"`; RTL-ready structure (logical layout, no hard-coded mirroring).
+
+**Tests** — Passed: 71 (44 unit + 27 integration). Failed: 0.
+`next build` succeeds: 18 routes, type-check clean, static pages prerendered, dynamic pages on-demand.
+Runtime check: homepage / faculties / modules / module detail / search / robots / 404 all render with
+real seeded data.
+
+**Deviations from PRD**
+- No frontend unit tests yet (Playwright/RTL) — deferred to Phase 8 QA.
+- Student-only affordances (favorite button, download, dashboard link) render as "se connecter"
+  prompts — the real flows are Phase 5.
+
+**Known issues** — none.
+
+**Next phase** — Phase 5: registration + academic profile, `/dashboard`, personalization, favorites,
+history, authorized download → signed URL (§29), S3 storage adapter, PDF viewer.

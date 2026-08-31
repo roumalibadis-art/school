@@ -79,12 +79,19 @@ levels→specialty, semesters→level, modules→semester **or** specialty. `aca
 Upload constraints (§36): extensions `pdf`, `png`, `jpg`, `jpeg`; content sniffed against the extension;
 size ≤ `Documents:MaxFileSizeBytes` (50 MB default).
 
+## Search endpoint (Phase 4 — live)
+
+`GET /api/search` (public). Query params: `q` (free text; a bare 4-digit token is treated as an
+academic year), `facultyId`, `departmentId`, `specialtyId`, `levelId`, `semesterId`, `moduleId`,
+`type`, `academicYearId`, `sessionId`, `isPremium`, `page`, `pageSize`. Returns a paged envelope of
+hits: `{ id, title, slug, type, moduleName, moduleSlug, specialtyName, year, session, isPremium, hasPreview }`.
+Only `Published` documents are searchable.
+
 ## Planned endpoints (later phases — from §46)
 
 ```
-# Public (Phase 4)
-GET  /api/exams                GET /api/exams/{slug}
-GET  /api/search?q=...&<filters>
+# Public
+GET  /api/exams                GET /api/exams/{slug}   # frontend currently uses /api/documents?type=Exam
 
 # Student (Phase 5)
 GET  /api/me   PUT /api/me
