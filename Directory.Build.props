@@ -8,7 +8,9 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
-    <InvariantGlobalization>true</InvariantGlobalization>
+    <!-- Full ICU globalization: the platform handles French and Arabic text (PRD §72/§73)
+         and slug generation relies on Unicode normalization. -->
+    <InvariantGlobalization>false</InvariantGlobalization>
     <Deterministic>true</Deterministic>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <RootNamespace>$(MSBuildProjectName)</RootNamespace>

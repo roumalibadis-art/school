@@ -4,8 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-**Phase 1 (Foundation) complete; Phase 2 (academic structure) starting.** See `docs/roadmap.md` for
-per-phase status and the PRD §83 reports. Build is green, 40 tests pass, schema is applied to local MySQL.
+**Phases 1–2 complete; Phase 3 (Documents) starting.** See `docs/roadmap.md` for per-phase status and
+the PRD §83 reports. Build green, 57 tests pass, both migrations applied to local MySQL, sample USTHB
+academic tree seeded in Development.
 
 **`PRD.md` is the single source of truth.** Read it before making architectural decisions. It is numbered in sections (1–84); cite sections when justifying choices. The workflow it mandates (see below) is binding, not advisory. Confirmed deviations: **net8.0** target, **no Docker** (§58), S3/search/payment adapters land in their feature phases.
 

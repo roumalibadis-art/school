@@ -54,10 +54,16 @@ Roles `Admin`, `Moderator`, `Student` seeded with `permission` claims in `AspNet
 (e.g. `Document.Publish`, `User.Suspend`, `Subscription.Manage`, `AcademicData.Manage`).
 Authorization policies map 1:1 to permission strings.
 
-## Planned tables by phase (not yet created)
+## Academic tables (Phase 2 — created)
 
-- **Phase 2 — Academic:** `Universities, Faculties, Departments, Domains, Specialties, Levels, Semesters,
-  AcademicYears, Modules, Sessions`. Hierarchy per §10. `Module` fields per §11.
+`Universities, Faculties, Departments, Domains, Specialties, Levels, Semesters, AcademicYears, Sessions,
+Modules` — all extend a shared shape: `Id`, `Name`, `Slug` (unique), `IsActive`, `IsDeleted`/`DeletedAt`
+(soft delete, global query filter), `CreatedAt`/`UpdatedAt`. Hierarchy per §10; `Module` fields per §11
+(`Coefficient decimal(4,2)`, `Credits`, `SemesterId`, `SpecialtyId`). Parent FKs are `RESTRICT`
+(`Specialty.DomainId` is `SET NULL`). Indexes: every parent FK, `(SpecialtyId, Order)` on Levels,
+`(LevelId, Order)` on Semesters, `(SpecialtyId, SemesterId)` on Modules, unique `StartYear` on AcademicYears.
+
+## Planned tables by phase (not yet created)
 - **Phase 3 — Documents:** `Documents` (§12: `Title, Slug, DocumentType, ModuleId, AcademicYearId, SessionId,
   FileStorageKey, PreviewStorageKey, FileName, FileSize, PageCount, MimeType, FileHashSha256, IsPremium,
   Status, Source, RightsStatus, PermissionNotes, UploadedById, ViewCount, DownloadCount`), `DocumentTags`,

@@ -52,7 +52,7 @@ public static class WebApplicationExtensions
         if (app.Environment.IsProduction())
         {
             logger.LogInformation("Production startup: ensuring roles/permissions (no auto-migration).");
-            await seeder.SeedAsync(seedDemoUsers: false);
+            await seeder.SeedAsync(includeDemoUsers: false);
             return;
         }
 
@@ -60,8 +60,8 @@ public static class WebApplicationExtensions
         logger.LogInformation("Applying database migrations...");
         await db.Database.MigrateAsync();
 
-        var seedDemoUsers = app.Configuration.GetValue("Seed:DemoUsers", app.Environment.IsDevelopment());
-        await seeder.SeedAsync(seedDemoUsers);
-        logger.LogInformation("Database is up to date and seeded (demo users: {SeedDemoUsers}).", seedDemoUsers);
+        var seedSamples = app.Configuration.GetValue("Seed:DemoUsers", app.Environment.IsDevelopment());
+        await seeder.SeedAsync(includeDemoUsers: seedSamples, includeSampleAcademicData: seedSamples, ct: default);
+        logger.LogInformation("Database is up to date and seeded (sample data: {SeedSamples}).", seedSamples);
     }
 }

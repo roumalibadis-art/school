@@ -61,7 +61,7 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         await db.Database.EnsureCreatedAsync();
 
         var seeder = scope.ServiceProvider.GetRequiredService<DbSeeder>();
-        await seeder.SeedAsync(seedDemoUsers: true);
+        await seeder.SeedAsync(includeDemoUsers: true, includeSampleAcademicData: false);
     }
 
     async Task IAsyncLifetime.DisposeAsync()

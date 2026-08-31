@@ -45,13 +45,27 @@ POST /api/auth/refresh
 { "refreshToken": "..." }
 ```
 
+## Academic structure endpoints (Phase 2 — live)
+
+Resources: `universities`, `faculties`, `departments`, `domains`, `specialties`, `levels`,
+`semesters`, `academic-years`, `sessions`, `modules`. Each exposes:
+
+| Method | Route | Auth | Notes |
+|---|---|---|---|
+| GET | `/api/{resource}?parentId=&search=&includeInactive=&page=&pageSize=` | public | `parentId` filters by the immediate parent FK (dependent dropdowns §34); paged envelope |
+| GET | `/api/{resource}/{id}` | public | |
+| GET | `/api/{resource}/slug/{slug}` | public | |
+| POST | `/api/{resource}` | `AcademicData.Manage` | server generates a unique slug |
+| PUT | `/api/{resource}/{id}` | `AcademicData.Manage` | full replace; slug regenerated iff name changed |
+| DELETE | `/api/{resource}/{id}` | `AcademicData.Manage` | soft delete |
+
+`parentId` targets: faculties→university, departments/domains→faculty, specialties→department,
+levels→specialty, semesters→level, modules→semester **or** specialty. `academic-years`/`sessions` have none.
+
 ## Planned endpoints (later phases — from §46)
 
 ```
-# Public (Phase 2–4)
-GET  /api/faculties            GET /api/faculties/{slug}
-GET  /api/specialties          GET /api/specialties/{slug}
-GET  /api/modules              GET /api/modules/{slug}
+# Public (Phase 3–4)
 GET  /api/documents            GET /api/documents/{slug}
 GET  /api/exams                GET /api/exams/{slug}
 GET  /api/search?q=...&<filters>

@@ -2,6 +2,7 @@ namespace USTHBStudy.Infrastructure.Persistence;
 
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using USTHBStudy.Domain.Academic;
 using USTHBStudy.Infrastructure.Identity;
 using USTHBStudy.Infrastructure.Persistence.Entities;
 
@@ -17,6 +18,17 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, 
     }
 
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+
+    public DbSet<University> Universities => Set<University>();
+    public DbSet<Faculty> Faculties => Set<Faculty>();
+    public DbSet<Department> Departments => Set<Department>();
+    public DbSet<AcademicDomain> Domains => Set<AcademicDomain>();
+    public DbSet<Specialty> Specialties => Set<Specialty>();
+    public DbSet<Level> Levels => Set<Level>();
+    public DbSet<Semester> Semesters => Set<Semester>();
+    public DbSet<AcademicYear> AcademicYears => Set<AcademicYear>();
+    public DbSet<Session> Sessions => Set<Session>();
+    public DbSet<Module> Modules => Set<Module>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

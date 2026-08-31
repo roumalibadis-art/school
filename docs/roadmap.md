@@ -3,7 +3,7 @@
 > Living document. `[x]` done · `[~]` in progress · `[ ]` not started.
 > Phase order is fixed by PRD §65 — do not skip. A PRD §83 report is appended at each phase boundary.
 
-**Current status:** Phase 2 — Academic structure (starting)
+**Current status:** Phase 3 — Documents (starting)
 
 ---
 
@@ -31,13 +31,13 @@
 - [x] Phase 1 §83 report + commit
 - [~] Docker — **excluded** by explicit user direction ("don't use docker, keep it simple"); deviates from PRD §58
 
-## Phase 2 — Academic structure  `[ ]`
+## Phase 2 — Academic structure  `[x]`
 
-- [ ] Entities: `University, Faculty, Department, Domain, Specialty, Level, Semester, AcademicYear, Module, Session` (§10, §11)
-- [ ] Slug generation, accent-safe, unique (§54)
-- [ ] Admin CRUD APIs + filtered list endpoints for dependent dropdowns (§34)
-- [ ] Caching of static academic data + invalidation (§56)
-- [ ] Indexes (§53), migration, tests
+- [x] Entities: `University, Faculty, Department, AcademicDomain, Specialty, Level, Semester, AcademicYear, Module, Session` (§10, §11)
+- [x] Slug generation, accent-safe (ICU), unique with `-N` suffix (§54)
+- [x] Admin CRUD APIs (`AcademicData.Manage`) + public reads + `?parentId=` filter for dependent dropdowns (§34)
+- [~] Caching of static academic data — **deferred to Phase 4** (belongs with the public read paths; admin views want fresh data) (§56)
+- [x] Indexes (§53), `AcademicStructure` migration applied to MySQL, sample USTHB tree seeded (Development), tests
 
 ## Phase 3 — Documents  `[ ]`
 
@@ -122,3 +122,35 @@ user-secrets, error responses carry no stack traces, rate limiter active (observ
 **Known issues** — none blocking.
 
 **Next phase** — Phase 2: academic hierarchy entities + admin CRUD.
+
+### Phase 2 — Academic structure — completed 2026-08-31
+
+**Implemented**
+- 10 entities under `Domain/Academic` on a shared `AcademicEntity` base (name, unique slug, active flag,
+  audit timestamps, soft-delete). `AcademicDomain` named to avoid the `USTHBStudy.Domain` namespace clash.
+- `Slugifier` (ICU normalization, accent-folding) — turned `InvariantGlobalization` **off** project-wide
+  since the platform handles French/Arabic (PRD §72/§73).
+- Generic `AcademicNodeService<TEntity,TDto,TInput>` (list + `?parentId` filter + search + paging, get,
+  get-by-slug, create, replace, soft-delete, unique-slug helper, parent-existence checks) with 10 thin
+  concrete services; `AcademicYear` auto-manages the single `IsCurrent` flag.
+- Generic `AcademicNodeController<TDto,TInput>` + 10 route shims: `GET` public, `POST/PUT/DELETE` behind
+  `AcademicData.Manage`. Routes `/api/{universities,faculties,departments,domains,specialties,levels,`
+  `semesters,academic-years,sessions,modules}`.
+- FluentValidation for every input; `AcademicStructure` migration applied to MySQL; `DbSeeder` plants a
+  small USTHB tree (1 specialty, L1–L3, S1–S6, 18 modules, 2 academic years, 2 sessions) in Development.
+
+**Tests** — Passed: 57 (37 unit + 20 integration). Failed: 0.
+New: `SlugifierTests`; `AcademicCrudTests` (public read / student write → 403 / full hierarchy build /
+missing-parent → 404 / duplicate-slug `-2` / rename-reslug / soft-delete / validation → 400).
+
+**Database** — Migration `20260831…_AcademicStructure` created and applied. 10 tables + indexes
+(parent FKs, `(SpecialtyId,Order)` on levels, `(LevelId,Order)` on semesters, `(SpecialtyId,SemesterId)`
+on modules, unique `Slug` per table, unique `StartYear` on academic years).
+
+**Security** — writes require `AcademicData.Manage` (Admin only by default); verified via integration test.
+
+**Deviations from PRD** — caching (§56) deferred to Phase 4 (see checklist note).
+
+**Known issues** — none.
+
+**Next phase** — Phase 3: `Document` entity, upload + validation + hashing, storage, PDF preview, publishing.

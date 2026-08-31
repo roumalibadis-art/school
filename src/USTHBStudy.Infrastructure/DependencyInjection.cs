@@ -1,10 +1,13 @@
 namespace USTHBStudy.Infrastructure;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using USTHBStudy.Application.Abstractions;
+using USTHBStudy.Application.Academic;
 using USTHBStudy.Application.Auth;
+using USTHBStudy.Infrastructure.Academic;
 using USTHBStudy.Infrastructure.Auth;
 using USTHBStudy.Infrastructure.Identity;
 using USTHBStudy.Infrastructure.Persistence;
@@ -29,7 +32,23 @@ public static class DependencyInjection
         services.AddScoped<IAccessControlService, AccessControlService>();
         services.AddScoped<DbSeeder>();
 
+        AddAcademic(services);
+
         return services;
+    }
+
+    private static void AddAcademic(IServiceCollection services)
+    {
+        services.AddScoped<IUniversityService, UniversityService>();
+        services.AddScoped<IFacultyService, FacultyService>();
+        services.AddScoped<IDepartmentService, DepartmentService>();
+        services.AddScoped<IDomainService, DomainService>();
+        services.AddScoped<ISpecialtyService, SpecialtyService>();
+        services.AddScoped<ILevelService, LevelService>();
+        services.AddScoped<ISemesterService, SemesterService>();
+        services.AddScoped<IAcademicYearService, AcademicYearService>();
+        services.AddScoped<ISessionService, SessionService>();
+        services.AddScoped<IModuleService, ModuleService>();
     }
 
     private static void AddOptions(IServiceCollection services, IConfiguration configuration)
@@ -63,6 +82,11 @@ public static class DependencyInjection
                 mySql => mySql.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName));
 
             options.AddInterceptors(serviceProvider.GetRequiredService<AuditableEntityInterceptor>());
+
+            // Every academic entity carries the same soft-delete filter and FKs are Restrict, so the
+            // required-navigation/query-filter interaction warning is expected here.
+            options.ConfigureWarnings(w =>
+                w.Ignore(CoreEventId.PossibleIncorrectRequiredNavigationWithQueryFilterInteractionWarning));
         });
 
         services.AddHealthChecks()
