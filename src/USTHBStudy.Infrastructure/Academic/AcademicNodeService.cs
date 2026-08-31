@@ -1,6 +1,7 @@
 namespace USTHBStudy.Infrastructure.Academic;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using USTHBStudy.Application.Abstractions;
 using USTHBStudy.Application.Academic;
 using USTHBStudy.Application.Common;
@@ -9,15 +10,23 @@ using USTHBStudy.Infrastructure.Persistence;
 
 /// <summary>
 /// Shared CRUD implementation for academic-hierarchy nodes (PRD §34). Concrete services supply
-/// mapping, the parent filter, and how an input becomes / updates an entity.
+/// mapping, the parent filter, and how an input becomes / updates an entity. Search-free list
+/// queries (dependent dropdowns) are cached and invalidated on any academic write (PRD §56).
 /// </summary>
 public abstract class AcademicNodeService<TEntity, TDto, TInput> : IAcademicNodeService<TDto, TInput>
     where TEntity : AcademicEntity
 {
-    protected AcademicNodeService(AppDbContext db, IDateTimeProvider clock)
+    private static readonly TimeSpan CacheTtl = TimeSpan.FromMinutes(10);
+
+    private readonly IMemoryCache _cache;
+    private readonly AcademicCacheSignal _cacheSignal;
+
+    protected AcademicNodeService(AcademicServiceDependencies deps)
     {
-        Db = db;
-        Clock = clock;
+        Db = deps.Db;
+        Clock = deps.Clock;
+        _cache = deps.Cache;
+        _cacheSignal = deps.CacheSignal;
     }
 
     protected AppDbContext Db { get; }
@@ -41,6 +50,27 @@ public abstract class AcademicNodeService<TEntity, TDto, TInput> : IAcademicNode
 
     // ---- CRUD ----
     public async Task<PagedResult<TDto>> ListAsync(AcademicQuery query, CancellationToken ct = default)
+    {
+        // Cache only the deterministic reference-data case (no free-text search).
+        if (string.IsNullOrWhiteSpace(query.Search))
+        {
+            var key = $"academic:{EntityName}:{query.ParentId}:{query.IncludeInactive}:" +
+                      $"{query.Page}:{query.PageSize}:v{_cacheSignal.Version}";
+
+            if (_cache.TryGetValue(key, out PagedResult<TDto>? cached) && cached is not null)
+            {
+                return cached;
+            }
+
+            var fresh = await QueryPageAsync(query, ct);
+            _cache.Set(key, fresh, CacheTtl);
+            return fresh;
+        }
+
+        return await QueryPageAsync(query, ct);
+    }
+
+    private async Task<PagedResult<TDto>> QueryPageAsync(AcademicQuery query, CancellationToken ct)
     {
         var paging = new PaginationParams { Page = query.Page, PageSize = query.PageSize };
 
@@ -82,6 +112,7 @@ public abstract class AcademicNodeService<TEntity, TDto, TInput> : IAcademicNode
         var entity = await BuildAsync(input, ct);
         Set.Add(entity);
         await Db.SaveChangesAsync(ct);
+        _cacheSignal.Bump();
         return Map(entity);
     }
 
@@ -90,6 +121,7 @@ public abstract class AcademicNodeService<TEntity, TDto, TInput> : IAcademicNode
         var entity = await RequireAsync(id, ct);
         await ApplyAsync(input, entity, ct);
         await Db.SaveChangesAsync(ct);
+        _cacheSignal.Bump();
         return Map(entity);
     }
 
@@ -99,6 +131,7 @@ public abstract class AcademicNodeService<TEntity, TDto, TInput> : IAcademicNode
         entity.IsDeleted = true;
         entity.DeletedAt = Clock.UtcNow;
         await Db.SaveChangesAsync(ct);
+        _cacheSignal.Bump();
     }
 
     // ---- helpers for concrete services ----

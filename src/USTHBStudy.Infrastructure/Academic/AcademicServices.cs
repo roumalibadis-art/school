@@ -1,14 +1,13 @@
 namespace USTHBStudy.Infrastructure.Academic;
 
 using Microsoft.EntityFrameworkCore;
-using USTHBStudy.Application.Abstractions;
 using USTHBStudy.Application.Academic;
 using USTHBStudy.Domain.Academic;
 using USTHBStudy.Infrastructure.Persistence;
 
 public sealed class UniversityService : AcademicNodeService<University, UniversityDto, UniversityInput>, IUniversityService
 {
-    public UniversityService(AppDbContext db, IDateTimeProvider clock) : base(db, clock) { }
+    public UniversityService(AcademicServiceDependencies deps) : base(deps) { }
 
     protected override UniversityDto Map(University e) =>
         new(e.Id, e.Name, e.Slug, e.Code, e.City, e.Country, e.IsActive);
@@ -32,7 +31,7 @@ public sealed class UniversityService : AcademicNodeService<University, Universi
 
 public sealed class FacultyService : AcademicNodeService<Faculty, FacultyDto, FacultyInput>, IFacultyService
 {
-    public FacultyService(AppDbContext db, IDateTimeProvider clock) : base(db, clock) { }
+    public FacultyService(AcademicServiceDependencies deps) : base(deps) { }
 
     protected override FacultyDto Map(Faculty e) => new(e.Id, e.Name, e.Slug, e.Code, e.UniversityId, e.IsActive);
 
@@ -58,7 +57,7 @@ public sealed class FacultyService : AcademicNodeService<Faculty, FacultyDto, Fa
 
 public sealed class DepartmentService : AcademicNodeService<Department, DepartmentDto, DepartmentInput>, IDepartmentService
 {
-    public DepartmentService(AppDbContext db, IDateTimeProvider clock) : base(db, clock) { }
+    public DepartmentService(AcademicServiceDependencies deps) : base(deps) { }
 
     protected override DepartmentDto Map(Department e) => new(e.Id, e.Name, e.Slug, e.Code, e.FacultyId, e.IsActive);
 
@@ -84,7 +83,7 @@ public sealed class DepartmentService : AcademicNodeService<Department, Departme
 
 public sealed class DomainService : AcademicNodeService<AcademicDomain, DomainDto, DomainInput>, IDomainService
 {
-    public DomainService(AppDbContext db, IDateTimeProvider clock) : base(db, clock) { }
+    public DomainService(AcademicServiceDependencies deps) : base(deps) { }
 
     protected override DomainDto Map(AcademicDomain e) => new(e.Id, e.Name, e.Slug, e.Code, e.FacultyId, e.IsActive);
 
@@ -110,7 +109,7 @@ public sealed class DomainService : AcademicNodeService<AcademicDomain, DomainDt
 
 public sealed class SpecialtyService : AcademicNodeService<Specialty, SpecialtyDto, SpecialtyInput>, ISpecialtyService
 {
-    public SpecialtyService(AppDbContext db, IDateTimeProvider clock) : base(db, clock) { }
+    public SpecialtyService(AcademicServiceDependencies deps) : base(deps) { }
 
     protected override SpecialtyDto Map(Specialty e) =>
         new(e.Id, e.Name, e.Slug, e.Code, e.Description, e.DepartmentId, e.AcademicDomainId, e.IsActive);
@@ -144,7 +143,7 @@ public sealed class SpecialtyService : AcademicNodeService<Specialty, SpecialtyD
 
 public sealed class LevelService : AcademicNodeService<Level, LevelDto, LevelInput>, ILevelService
 {
-    public LevelService(AppDbContext db, IDateTimeProvider clock) : base(db, clock) { }
+    public LevelService(AcademicServiceDependencies deps) : base(deps) { }
 
     protected override LevelDto Map(Level e) =>
         new(e.Id, e.Name, e.Slug, e.ShortName, e.Cycle.ToString(), e.Order, e.SpecialtyId, e.IsActive);
@@ -175,7 +174,7 @@ public sealed class LevelService : AcademicNodeService<Level, LevelDto, LevelInp
 
 public sealed class SemesterService : AcademicNodeService<Semester, SemesterDto, SemesterInput>, ISemesterService
 {
-    public SemesterService(AppDbContext db, IDateTimeProvider clock) : base(db, clock) { }
+    public SemesterService(AcademicServiceDependencies deps) : base(deps) { }
 
     protected override SemesterDto Map(Semester e) =>
         new(e.Id, e.Name, e.Slug, e.ShortName, e.Order, e.LevelId, e.IsActive);
@@ -205,7 +204,7 @@ public sealed class SemesterService : AcademicNodeService<Semester, SemesterDto,
 
 public sealed class AcademicYearService : AcademicNodeService<AcademicYear, AcademicYearDto, AcademicYearInput>, IAcademicYearService
 {
-    public AcademicYearService(AppDbContext db, IDateTimeProvider clock) : base(db, clock) { }
+    public AcademicYearService(AcademicServiceDependencies deps) : base(deps) { }
 
     protected override AcademicYearDto Map(AcademicYear e) =>
         new(e.Id, e.Name, e.Slug, e.StartYear, e.EndYear, e.IsCurrent, e.IsActive);
@@ -237,7 +236,7 @@ public sealed class AcademicYearService : AcademicNodeService<AcademicYear, Acad
 
 public sealed class SessionService : AcademicNodeService<Session, SessionDto, SessionInput>, ISessionService
 {
-    public SessionService(AppDbContext db, IDateTimeProvider clock) : base(db, clock) { }
+    public SessionService(AcademicServiceDependencies deps) : base(deps) { }
 
     protected override SessionDto Map(Session e) => new(e.Id, e.Name, e.Slug, e.Kind.ToString(), e.Order, e.IsActive);
 
@@ -261,7 +260,7 @@ public sealed class SessionService : AcademicNodeService<Session, SessionDto, Se
 
 public sealed class ModuleService : AcademicNodeService<Module, ModuleDto, ModuleInput>, IModuleService
 {
-    public ModuleService(AppDbContext db, IDateTimeProvider clock) : base(db, clock) { }
+    public ModuleService(AcademicServiceDependencies deps) : base(deps) { }
 
     protected override ModuleDto Map(Module e) => new(
         e.Id, e.Name, e.Slug, e.Code, e.Description, e.Coefficient, e.Credits, e.SemesterId, e.SpecialtyId, e.IsActive);

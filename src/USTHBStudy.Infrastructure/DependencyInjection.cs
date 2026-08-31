@@ -8,9 +8,11 @@ using USTHBStudy.Application.Abstractions;
 using USTHBStudy.Application.Academic;
 using USTHBStudy.Application.Auth;
 using USTHBStudy.Application.Documents;
+using USTHBStudy.Application.Search;
 using USTHBStudy.Infrastructure.Academic;
 using USTHBStudy.Infrastructure.Auth;
 using USTHBStudy.Infrastructure.Documents;
+using USTHBStudy.Infrastructure.Search;
 using USTHBStudy.Infrastructure.Identity;
 using USTHBStudy.Infrastructure.Persistence;
 using USTHBStudy.Infrastructure.Persistence.Interceptors;
@@ -44,6 +46,11 @@ public static class DependencyInjection
 
     private static void AddAcademic(IServiceCollection services)
     {
+        services.AddMemoryCache();
+        services.AddSingleton<AcademicCacheSignal>();
+        services.AddScoped<AcademicServiceDependencies>();
+        services.AddScoped<ISearchService, MySqlSearchService>();
+
         services.AddScoped<IUniversityService, UniversityService>();
         services.AddScoped<IFacultyService, FacultyService>();
         services.AddScoped<IDepartmentService, DepartmentService>();
