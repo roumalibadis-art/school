@@ -111,6 +111,9 @@ public class TaxonomyProposalTests
         var first = await ClassificationHarness.DataAsync(await Propose(one, "Session", "Rattrapage spécial"));
         var second = await ClassificationHarness.DataAsync(await Propose(two, "Session", "rattrapage SPECIAL"));
         second.GetProperty("outcome").GetString().Should().Be("ExistingProposal");
+        second.GetProperty("proposal").GetProperty("submittedByEmail").ValueKind.Should().Be(JsonValueKind.Null,
+            "another student's identity must not leak through a shared proposal");
+        second.GetProperty("proposal").GetProperty("submittedById").GetGuid().Should().Be(Guid.Empty);
         second.GetProperty("proposal").GetProperty("id").GetGuid().Should().Be(first.GetProperty("proposal").GetProperty("id").GetGuid());
 
         (await Propose(one, "Session", "Autre session A")).StatusCode.Should().Be(HttpStatusCode.OK);

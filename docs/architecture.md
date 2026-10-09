@@ -131,3 +131,14 @@ Standard HTTP responses are used where a wrapper adds nothing (e.g. `204 No Cont
 
 - Serilog: console + rolling file sinks, request logging, correlation/trace enrichers.
 - Health checks: `/health` (aggregate), `/health/ready` (DB + storage), `/health/live` (process).
+
+
+## Community classification (Enhancement E1)
+
+New aggregate lives in `Domain/Classification` (settings, task, assignment, vote, stats, proposal, ticket) and is
+served by `Infrastructure/Classification` (`ClassificationService`, `ClassificationAdminService`,
+`TaxonomyProposalService`, `DownloadQuotaService`, shared `ConsensusApplier`, `DocumentLock`). The consensus rule is
+a pure function in `Application/Classification/ConsensusEvaluator`. `DocumentService` consults
+`IDownloadQuotaService` after the Premium/role check and never before. Google sign-in adds ports
+(`IGoogleOidcClient`, `IExternalAccountService`, `IExternalLoginTicketService`) with a fake-able client for tests.
+The frontend reaches the API for classification through the same-origin BFF `/bff/classification/*`.

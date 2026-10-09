@@ -115,3 +115,20 @@ dotnet ef migrations script --idempotent -o artifacts/migrate.sql   # for prod r
 ```
 
 Production schema is never hand-edited; every change is a migration (§6). Dev DB: `usthbstudy` on local `MySQL80`.
+
+## Community classification (migration `CommunityClassification`)
+
+`Documents`: `ModuleId` → **nullable**; new `SpecialtyId`, `DepartmentId` (FK, SetNull), `ClassificationStatus`
+(default 1 = Classified), `VerificationStatus` (default 0), `VotingRound` (default 1), `ClassificationVersion`
+(concurrency token), `ClassificationReviewReason`, `ClassifiedAt`, `VerifiedAt`, `VerifiedById`; index
+`(ClassificationStatus, VerificationStatus, CreatedAt)`. Existing rows are backfilled as Classified / Unverified
+with `ClassifiedAt = CreatedAt`.
+
+New tables: `ClassificationSettings` (single row), `ClassificationTasks`, `ClassificationAssignments`
+(unique `(DocumentId, UserId, Round)`), `ClassificationVotes` (unique `(DocumentId, UserId, Round)`, vote fields +
+five nullable proposal ids), `UserContributionStats` (PK `UserId`), `TaxonomyProposals` (unique `DedupeKey`),
+`ExternalLoginTickets` (unique `TokenHash`). Identity's existing `AspNetUserLogins` stores Google links.
+
+**Rollback:** `Down` drops the new tables/columns and restores `ModuleId NOT NULL`; it **fails by design** (no
+data loss) while any document without a module exists — classify or remove those first. Tested on real MySQL
+(`MigrationPreservationTests`). University data and relationships are untouched.

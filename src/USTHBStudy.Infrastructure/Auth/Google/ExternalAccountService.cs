@@ -6,7 +6,6 @@ using Microsoft.EntityFrameworkCore;
 using USTHBStudy.Application.Abstractions;
 using USTHBStudy.Application.Auth.Google;
 using USTHBStudy.Application.Authorization;
-using USTHBStudy.Application.Common;
 using USTHBStudy.Domain.Classification;
 using USTHBStudy.Infrastructure.Identity;
 using USTHBStudy.Infrastructure.Persistence;

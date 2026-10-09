@@ -3,7 +3,7 @@
 > Living document. `[x]` done · `[~]` in progress · `[ ]` not started.
 > Phase order is fixed by PRD §65 — do not skip. A PRD §83 report is appended at each phase boundary.
 
-**Current status:** Phase 8 — Quality (starting)
+**Current status:** Phase 8 — Quality (starting) · Enhancement **E1 — Community classification** complete (see below)
 
 ---
 
@@ -383,3 +383,38 @@ document + notification; report → resolve → audit entry; dashboard stats; us
 
 **Next phase** — Phase 8: security audit vs §44/§61, performance (N+1, pagination, indexes, §70),
 responsive + RTL (§49/§73), SEO, accessibility (§71), upload-abuse tests, frontend test suite.
+
+
+---
+
+## Enhancement E1 — Community-driven classification & contribution  `[x]`
+
+Spec: community classification, voting/consensus, contribution-based access, user-proposed taxonomy values,
+Google sign-in, admin configuration. Design: [classification.md](classification.md), [google-auth.md](google-auth.md).
+
+- [x] Optional university (already nullable on users; profile form no longer gates Faculty on it); search never filtered on it
+- [x] `Document` classification vs verification status, optional `ModuleId`, direct specialty/department; migration with backfill
+- [x] Tasks (default 3 docs), distinct voters (default 3), unique vote/assignment constraints, skip semantics
+- [x] Configurable consensus policy (`ConsensusEvaluator`), admin verify/correct/reject/reopen, audit trail
+- [x] Login + download triggers, coordinated single prompt, snooze; free-tier download quota (off by default) with rewards and anti-abuse caps
+- [x] "Add new…" taxonomy proposals (validation, normalisation, duplicate/similar detection) + admin approve/rename/merge/reject
+- [x] Google sign-in (code flow + PKCE + state + nonce, safe linking)
+- [x] Admin UI: queues, review, settings, reports, taxonomy; student UI: `/classify`, prompt, inline add-new
+- [x] Tests: 116 unit + 151 integration (10 need MySQL) + 10 Playwright E2E
+
+### §83 report
+
+**Done** — as above. **Fixed along the way** — the repo did not build from a clean clone (`Infrastructure/Storage`
+was never committed: an ignore rule matched it), the header kept showing "Connexion" after a client-side login,
+`/dl/*` was reachable by router prefetch (state-changing GET).
+
+**Tests (actually executed)** — `dotnet test`: unit 116 passed; integration 151 passed (incl. 7 parallel
+concurrency tests and 3 migration data-preservation/rollback tests on real MySQL 8). Playwright: 10 passed
+(real API + MySQL + Next production build + Chromium + fake Google IdP). `next build`: 40 routes, `tsc` clean.
+
+**Deviations / decisions needing approval** — see the hand-over notes: document-type enum is not extensible at
+runtime; reading in the browser counts as a download for the quota; `Faculty.UniversityId` stays required.
+
+**Known limitations** — no email notification when a proposal is reviewed; quota windows reset bonus together
+with usage (no carry-over); admin option lists load the first 100 items of each taxonomy; E2E and the MySQL tests
+need a local MySQL.

@@ -94,7 +94,8 @@ public sealed class GoogleAuthController : ApiControllerBase
         Response.Cookies.Append(CookieName, _protector.Protect(JsonSerializer.Serialize(flow)), new CookieOptions
         {
             HttpOnly = true,
-            Secure = Request.IsHttps,
+            // Behind a TLS-terminating proxy Request.IsHttps is false, so also trust an https public origin.
+            Secure = Request.IsHttps || _options.FrontendBaseUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase),
             SameSite = SameSiteMode.Lax, // must survive the top-level redirect back from Google
             Path = "/api/auth/google",
             MaxAge = FlowLifetime,

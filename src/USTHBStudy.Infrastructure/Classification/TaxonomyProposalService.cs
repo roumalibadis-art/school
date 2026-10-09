@@ -80,7 +80,7 @@ public sealed class TaxonomyProposalService : ITaxonomyProposalService
         var existingProposal = await _db.TaxonomyProposals.AsNoTracking().FirstOrDefaultAsync(p => p.DedupeKey == dedupe, ct);
         if (existingProposal is not null)
         {
-            return await ExistingProposalResultAsync(existingProposal, similar, ct);
+            return await ExistingProposalResultAsync(userId, existingProposal, similar, ct);
         }
 
         var settings = await ClassificationSettingsStore.LoadAsync(_db, _clock, ct);
@@ -121,7 +121,7 @@ public sealed class TaxonomyProposalService : ITaxonomyProposalService
             // Lost a race with an identical proposal — share that one.
             _db.Entry(proposal).State = EntityState.Detached;
             var winner = await _db.TaxonomyProposals.AsNoTracking().FirstAsync(p => p.DedupeKey == dedupe, ct);
-            return await ExistingProposalResultAsync(winner, similar, ct);
+            return await ExistingProposalResultAsync(userId, winner, similar, ct);
         }
 
         await _audit.WriteAsync("taxonomy.proposed", "TaxonomyProposal", proposal.Id.ToString(),
@@ -130,8 +130,12 @@ public sealed class TaxonomyProposalService : ITaxonomyProposalService
         return new ProposeResultDto("Created", (await MapAsync(new[] { proposal }, ct))[0], null, similar);
     }
 
+    /// <summary>Students see a shared proposal, never who else submitted it (that is for reviewers only).</summary>
+    private static ProposalDto Anonymise(ProposalDto dto, Guid viewerId) =>
+        dto.SubmittedById == viewerId ? dto : dto with { SubmittedById = Guid.Empty, SubmittedByEmail = null };
+
     private async Task<ProposeResultDto> ExistingProposalResultAsync(
-        TaxonomyProposal existing, IReadOnlyList<SimilarValueDto> similar, CancellationToken ct)
+        Guid viewerId, TaxonomyProposal existing, IReadOnlyList<SimilarValueDto> similar, CancellationToken ct)
     {
         if (existing.Status == ProposalStatus.Rejected)
         {
@@ -144,7 +148,7 @@ public sealed class TaxonomyProposalService : ITaxonomyProposalService
             return new ProposeResultDto("ExistingValue", null, resolved, similar);
         }
 
-        return new ProposeResultDto("ExistingProposal", (await MapAsync(new[] { existing }, ct))[0], null, similar);
+        return new ProposeResultDto("ExistingProposal", Anonymise((await MapAsync(new[] { existing }, ct))[0], viewerId), null, similar);
     }
 
     private static string DedupeKey(ProposalCategory category, Guid? parentId, string key) =>
