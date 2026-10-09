@@ -53,7 +53,7 @@ export async function adminSend(
   method: "POST" | "PUT" | "DELETE",
   path: string,
   body?: unknown,
-): Promise<{ ok: boolean; message: string }> {
+): Promise<{ ok: boolean; message: string; errors: string[] }> {
   const t = await token();
   const res = await fetch(`${API_URL}${path}`, {
     method,
@@ -61,6 +61,10 @@ export async function adminSend(
     body: body === undefined ? undefined : JSON.stringify(body),
     cache: "no-store",
   });
-  const json = (await res.json().catch(() => ({}))) as { message?: string };
-  return { ok: res.ok, message: json.message ?? `${res.status}` };
+  const json = (await res.json().catch(() => ({}))) as { message?: string; errors?: string[] };
+  return { ok: res.ok, message: json.message ?? `${res.status}`, errors: json.errors ?? [] };
+}
+
+export function canManageSettings(permissions: string[]): boolean {
+  return permissions.includes("Classification.Settings");
 }
