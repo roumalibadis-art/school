@@ -23,7 +23,16 @@ public sealed class DocumentConfiguration : IEntityTypeConfiguration<Document>
         b.Property(x => x.PermissionNotes).HasMaxLength(1000);
         b.Property(x => x.ReviewNote).HasMaxLength(2000);
 
+        b.Property(x => x.ClassificationStatus).HasConversion<int>();
+        b.Property(x => x.VerificationStatus).HasConversion<int>();
+        b.Property(x => x.ClassificationReviewReason).HasMaxLength(40);
+        b.Property(x => x.ClassificationVersion).IsConcurrencyToken();
+
         b.HasIndex(x => x.Slug).IsUnique();
+        // Community queue + admin review queues.
+        b.HasIndex(x => new { x.ClassificationStatus, x.VerificationStatus, x.CreatedAt });
+        b.HasIndex(x => x.SpecialtyId);
+        b.HasIndex(x => x.DepartmentId);
         b.HasIndex(x => x.FileHashSha256);
         b.HasIndex(x => new { x.Status, x.IsPremium, x.CreatedAt });
         b.HasIndex(x => new { x.ModuleId, x.Type, x.Status });
@@ -33,6 +42,10 @@ public sealed class DocumentConfiguration : IEntityTypeConfiguration<Document>
 
         b.HasOne(x => x.Module).WithMany()
             .HasForeignKey(x => x.ModuleId).OnDelete(DeleteBehavior.Restrict);
+        b.HasOne(x => x.Specialty).WithMany()
+            .HasForeignKey(x => x.SpecialtyId).OnDelete(DeleteBehavior.SetNull);
+        b.HasOne(x => x.Department).WithMany()
+            .HasForeignKey(x => x.DepartmentId).OnDelete(DeleteBehavior.SetNull);
         b.HasOne(x => x.AcademicYear).WithMany()
             .HasForeignKey(x => x.AcademicYearId).OnDelete(DeleteBehavior.SetNull);
         b.HasOne(x => x.Session).WithMany()

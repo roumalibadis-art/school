@@ -8,8 +8,10 @@ using USTHBStudy.Application.Abstractions;
 using USTHBStudy.Application.Authorization;
 using USTHBStudy.Application.Common;
 using USTHBStudy.Application.Admin;
+using USTHBStudy.Application.Classification;
 using USTHBStudy.Application.Documents;
 using USTHBStudy.Application.Students;
+using USTHBStudy.Domain.Classification;
 using USTHBStudy.Domain.Documents;
 using USTHBStudy.Infrastructure.Persistence;
 
@@ -24,6 +26,7 @@ public sealed class DocumentService : IDocumentService
     private readonly IDownloadTokenService _downloadTokens;
     private readonly IAuditLogger _audit;
     private readonly IDateTimeProvider _clock;
+    private readonly IDownloadQuotaService _quota;
     private readonly DocumentOptions _options;
     private readonly ILogger<DocumentService> _logger;
 
@@ -37,6 +40,7 @@ public sealed class DocumentService : IDocumentService
         IDownloadTokenService downloadTokens,
         IAuditLogger audit,
         IDateTimeProvider clock,
+        IDownloadQuotaService quota,
         IOptions<DocumentOptions> options,
         ILogger<DocumentService> logger)
     {
@@ -49,6 +53,7 @@ public sealed class DocumentService : IDocumentService
         _downloadTokens = downloadTokens;
         _audit = audit;
         _clock = clock;
+        _quota = quota;
         _options = options.Value;
         _logger = logger;
     }
@@ -107,6 +112,11 @@ public sealed class DocumentService : IDocumentService
             ModuleId = request.ModuleId,
             AcademicYearId = request.AcademicYearId,
             SessionId = request.SessionId,
+            // A document without a module has no trustworthy academic metadata yet: it enters the
+            // community classification queue (classification ≠ verification).
+            ClassificationStatus = request.ModuleId is null ? ClassificationStatus.Unclassified : ClassificationStatus.Classified,
+            VerificationStatus = request.ModuleId is null ? VerificationStatus.Pending : VerificationStatus.Unverified,
+            ClassifiedAt = request.ModuleId is null ? null : _clock.UtcNow,
             FileStorageKey = stored.StorageKey,
             PreviewStorageKey = previewKey,
             ThumbnailStorageKey = thumbnailKey,
@@ -148,7 +158,7 @@ public sealed class DocumentService : IDocumentService
 
         if (query.SpecialtyId is { } specialtyId)
         {
-            q = q.Where(d => d.Module!.SpecialtyId == specialtyId);
+            q = q.Where(d => d.Module!.SpecialtyId == specialtyId || d.SpecialtyId == specialtyId);
         }
 
         if (query.AcademicYearId is { } yearId)
@@ -237,7 +247,20 @@ public sealed class DocumentService : IDocumentService
         document.Title = update.Title.Trim();
         document.Description = update.Description?.Trim();
         document.Type = Enum.Parse<DocumentType>(update.Type, ignoreCase: true);
+        var wasUnclassified = document.ClassificationStatus == ClassificationStatus.Unclassified;
         document.ModuleId = update.ModuleId;
+        if (wasUnclassified && update.ModuleId is not null)
+        {
+            // Staff classified it directly: that settles the community question.
+            document.ClassificationStatus = ClassificationStatus.Classified;
+            document.VerificationStatus = VerificationStatus.Verified;
+            document.ClassificationReviewReason = null;
+            document.ClassifiedAt = _clock.UtcNow;
+            document.VerifiedAt = _clock.UtcNow;
+            document.VerifiedById = _currentUser.UserId;
+            document.ClassificationVersion++;
+        }
+
         document.AcademicYearId = update.AcademicYearId;
         document.SessionId = update.SessionId;
         document.IsPremium = update.IsPremium;
@@ -259,6 +282,11 @@ public sealed class DocumentService : IDocumentService
         if (target == DocumentStatus.Published && string.IsNullOrWhiteSpace(document.FileStorageKey))
         {
             throw new BadRequestException("A document without a stored file cannot be published.");
+        }
+
+        if (target == DocumentStatus.Published && document.ModuleId is null)
+        {
+            throw new BadRequestException("A document must be assigned to a module before it can be published.");
         }
 
         var previous = document.Status;
@@ -331,7 +359,12 @@ public sealed class DocumentService : IDocumentService
         var user = await _db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId, ct)
                    ?? throw new UnauthorizedAppException();
 
-        _access.EnsureCanAccess(document.IsPremium, new AccessSubject(user.IsActive, user.IsPremium, user.PremiumExpiresAt));
+        var subject = new AccessSubject(user.IsActive, user.IsPremium, user.PremiumExpiresAt);
+        _access.EnsureCanAccess(document.IsPremium, subject);
+
+        // Contribution quota only ever *adds* a restriction on free users' free documents; Premium
+        // members and staff are exempt, and it can never grant access the checks above refused.
+        await _quota.ConsumeDownloadAsync(userId, _access.IsPremiumActive(subject) || IsStaff, ct);
 
         var lifetime = TimeSpan.FromSeconds(_options.DownloadLinkSeconds);
         var expiresAt = _clock.UtcNow.Add(lifetime);
@@ -388,11 +421,11 @@ public sealed class DocumentService : IDocumentService
         }
     }
 
-    private async Task EnsureClassificationExistsAsync(Guid moduleId, Guid? yearId, Guid? sessionId, CancellationToken ct)
+    private async Task EnsureClassificationExistsAsync(Guid? moduleId, Guid? yearId, Guid? sessionId, CancellationToken ct)
     {
-        if (!await _db.Modules.AnyAsync(m => m.Id == moduleId, ct))
+        if (moduleId is { } m0 && !await _db.Modules.AnyAsync(m => m.Id == m0, ct))
         {
-            throw new NotFoundException("Module", moduleId);
+            throw new NotFoundException("Module", m0);
         }
 
         if (yearId is { } y && !await _db.AcademicYears.AnyAsync(a => a.Id == y, ct))
@@ -461,5 +494,7 @@ public sealed class DocumentService : IDocumentService
         d.SolutionForDocumentId,
         d.Solutions.Select(s => s.Id).ToArray(),
         d.PublishedAt,
-        d.CreatedAt);
+        d.CreatedAt,
+        d.ClassificationStatus.ToString(),
+        d.VerificationStatus.ToString());
 }

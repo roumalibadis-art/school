@@ -51,6 +51,21 @@ public static class Permissions
         public const string View = "AuditLog.View";
     }
 
+    public static class Classification
+    {
+        /// <summary>Review queues, verify / correct / reject / reopen classifications, classification reports.</summary>
+        public const string Review = "Classification.Review";
+
+        /// <summary>Edit the community-classification, consensus and reward configuration.</summary>
+        public const string Settings = "Classification.Settings";
+    }
+
+    public static class Taxonomy
+    {
+        /// <summary>Approve, rename, merge or reject user-submitted taxonomy values.</summary>
+        public const string Review = "Taxonomy.Review";
+    }
+
     /// <summary>Every permission string, for policy registration.</summary>
     public static IEnumerable<string> All()
     {
@@ -68,6 +83,9 @@ public static class Permissions
         yield return AcademicData.Manage;
         yield return Reports.Resolve;
         yield return Audit.View;
+        yield return Classification.Review;
+        yield return Classification.Settings;
+        yield return Taxonomy.Review;
     }
 
     /// <summary>Default role → permission grants seeded on first run (PRD §43).</summary>
@@ -79,6 +97,7 @@ public static class Permissions
             {
                 Documents.View, Documents.Update, Documents.Publish,
                 Contributions.Moderate, Reports.Resolve, Users.View,
+                Classification.Review, Taxonomy.Review,
             },
             [Roles.Student] = new[]
             {

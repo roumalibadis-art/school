@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using USTHBStudy.Application.Abstractions;
+using USTHBStudy.Application.Classification;
 using USTHBStudy.Application.Academic;
 using USTHBStudy.Application.Admin;
 using USTHBStudy.Application.Auth;
@@ -17,6 +18,7 @@ using USTHBStudy.Application.Subscriptions;
 using USTHBStudy.Infrastructure.Academic;
 using USTHBStudy.Infrastructure.Admin;
 using USTHBStudy.Infrastructure.Auth;
+using USTHBStudy.Infrastructure.Classification;
 using USTHBStudy.Infrastructure.Contributions;
 using USTHBStudy.Infrastructure.Documents;
 using USTHBStudy.Infrastructure.Notifications;
@@ -66,6 +68,14 @@ public static class DependencyInjection
         services.AddScoped<IContributionService, ContributionService>();
         services.AddScoped<IReportService, ReportService>();
         services.AddScoped<IAdminDashboardService, AdminDashboardService>();
+
+        services.AddScoped<IClassificationSettingsService, ClassificationSettingsService>();
+        services.AddScoped<IClassificationService, ClassificationService>();
+        services.AddScoped<IClassificationAdminService, ClassificationAdminService>();
+        services.AddScoped<ITaxonomyProposalService, TaxonomyProposalService>();
+        services.AddScoped<DownloadQuotaService>();
+        services.AddScoped<IDownloadQuotaService>(sp => sp.GetRequiredService<DownloadQuotaService>());
+        services.AddScoped<IContributionTracker>(sp => sp.GetRequiredService<DownloadQuotaService>());
 
         AddAcademic(services);
 

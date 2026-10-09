@@ -9,7 +9,7 @@ public sealed class DocumentUploadForm
 {
     public string Title { get; set; } = string.Empty;
     public string Type { get; set; } = string.Empty;
-    public Guid ModuleId { get; set; }
+    public Guid? ModuleId { get; set; }
     public Guid? AcademicYearId { get; set; }
     public Guid? SessionId { get; set; }
     public string? Description { get; set; }
@@ -32,7 +32,7 @@ public sealed class DocumentUploadFormValidator : AbstractValidator<DocumentUplo
         RuleFor(x => x.Type).NotEmpty()
             .Must(t => Enum.TryParse<DocumentType>(t, ignoreCase: true, out _))
             .WithMessage("Type must be one of: " + string.Join(", ", Enum.GetNames<DocumentType>()) + ".");
-        RuleFor(x => x.ModuleId).NotEmpty();
+        RuleFor(x => x.ModuleId).Must(id => id is null || id != Guid.Empty).WithMessage("ModuleId is invalid.");
         RuleFor(x => x.Description).MaximumLength(4000);
         RuleFor(x => x.Source).MaximumLength(500);
         RuleFor(x => x.PermissionNotes).MaximumLength(1000);

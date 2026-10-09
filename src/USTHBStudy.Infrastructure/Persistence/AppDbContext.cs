@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using USTHBStudy.Domain.Academic;
 using USTHBStudy.Domain.Admin;
+using USTHBStudy.Domain.Classification;
 using USTHBStudy.Domain.Contributions;
 using USTHBStudy.Domain.Documents;
 using USTHBStudy.Domain.Students;
@@ -48,6 +49,14 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, 
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<Contribution> Contributions => Set<Contribution>();
     public DbSet<DocumentReport> DocumentReports => Set<DocumentReport>();
+
+    public DbSet<ClassificationSettings> ClassificationSettings => Set<ClassificationSettings>();
+    public DbSet<ClassificationTask> ClassificationTasks => Set<ClassificationTask>();
+    public DbSet<ClassificationAssignment> ClassificationAssignments => Set<ClassificationAssignment>();
+    public DbSet<ClassificationVote> ClassificationVotes => Set<ClassificationVote>();
+    public DbSet<UserContributionStats> ContributionStats => Set<UserContributionStats>();
+    public DbSet<TaxonomyProposal> TaxonomyProposals => Set<TaxonomyProposal>();
+    public DbSet<ExternalLoginTicket> ExternalLoginTickets => Set<ExternalLoginTicket>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

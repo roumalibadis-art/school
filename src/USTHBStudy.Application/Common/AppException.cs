@@ -43,7 +43,8 @@ public sealed class UnauthorizedAppException : AppException
 /// <summary>403 — authenticated but not allowed (suspended, wrong role, no Premium — PRD §23/§61).</summary>
 public sealed class ForbiddenAppException : AppException
 {
-    public ForbiddenAppException(string message = "You do not have access to this resource.") : base(message)
+    public ForbiddenAppException(string message = "You do not have access to this resource.", IEnumerable<string>? errors = null)
+        : base(message, errors)
     {
     }
 }

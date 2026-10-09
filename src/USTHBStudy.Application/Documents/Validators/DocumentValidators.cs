@@ -11,7 +11,7 @@ public sealed class DocumentUploadRequestValidator : AbstractValidator<DocumentU
         RuleFor(x => x.Type).NotEmpty()
             .Must(t => Enum.TryParse<DocumentType>(t, ignoreCase: true, out _))
             .WithMessage("Type must be one of: " + string.Join(", ", Enum.GetNames<DocumentType>()) + ".");
-        RuleFor(x => x.ModuleId).NotEmpty();
+        RuleFor(x => x.ModuleId).Must(id => id is null || id != Guid.Empty).WithMessage("ModuleId is invalid.");
         RuleFor(x => x.Description).MaximumLength(4000);
         RuleFor(x => x.Source).MaximumLength(500);
         RuleFor(x => x.PermissionNotes).MaximumLength(1000);
@@ -29,7 +29,7 @@ public sealed class DocumentMetadataUpdateValidator : AbstractValidator<Document
         RuleFor(x => x.Type).NotEmpty()
             .Must(t => Enum.TryParse<DocumentType>(t, ignoreCase: true, out _))
             .WithMessage("Type must be a valid document type.");
-        RuleFor(x => x.ModuleId).NotEmpty();
+        RuleFor(x => x.ModuleId).Must(id => id is null || id != Guid.Empty).WithMessage("ModuleId is invalid.");
         RuleFor(x => x.Description).MaximumLength(4000);
         RuleFor(x => x.Source).MaximumLength(500);
         RuleFor(x => x.PermissionNotes).MaximumLength(1000);
