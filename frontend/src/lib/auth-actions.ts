@@ -120,3 +120,19 @@ export async function updateProfileAction(_prev: FormState, formData: FormData):
 
   redirect("/dashboard");
 }
+
+/** Starts linking a Google account to the signed-in user (one-time ticket issued by the API, then Google). */
+export async function startGoogleLinkAction() {
+  const token = (await cookies()).get(ACCESS_COOKIE)?.value;
+  if (!token) redirect("/login?next=/profile");
+
+  const res = await fetch(`${API_URL}/api/auth/google/link`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  if (!res.ok) redirect("/profile?google=failed");
+
+  const { data } = (await res.json()) as { data: { url: string } };
+  redirect(data.url);
+}

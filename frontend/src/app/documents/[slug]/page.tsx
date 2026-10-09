@@ -4,10 +4,10 @@ import { notFound } from "next/navigation";
 import { FavoriteButton } from "@/components/favorite-button";
 import { ReportButton } from "@/components/report-button";
 import { Badge, Card, Container, LinkButton } from "@/components/ui";
-import { apiGetOrNull } from "@/lib/api";
+import { apiGetOrNull, authedApiGet } from "@/lib/api";
 import { documentTypeLabel, formatBytes, formatDate } from "@/lib/format";
 import { getCurrentUser } from "@/lib/session";
-import type { DocumentDto } from "@/lib/types";
+import type { DocumentDto, QuotaStatus } from "@/lib/types";
 
 type Params = { params: Promise<{ slug: string }> };
 
@@ -34,6 +34,12 @@ export default async function DocumentPage({ params }: Params) {
     getCurrentUser(),
   ]);
   if (!doc) notFound();
+
+  // Tell the reader about any download allowance *before* it can block them.
+  const quota = user
+    ? (await authedApiGet<{ quota: QuotaStatus }>("/api/classification/me").catch(() => null))?.quota ?? null
+    : null;
+  const showQuota = !!quota && quota.enabled && !quota.exempt && !doc.isPremium;
 
   return (
     <Container className="grid gap-8 py-10 lg:grid-cols-[minmax(0,1fr)_20rem]">
@@ -72,10 +78,18 @@ export default async function DocumentPage({ params }: Params) {
               <LinkButton href={`/documents/${doc.slug}/view`} variant="primary" className="w-full">
                 Lire le document
               </LinkButton>
-              <LinkButton href={`/dl/${encodeURIComponent(doc.slug)}`} variant="secondary" className="w-full">
+              <LinkButton href={`/dl/${encodeURIComponent(doc.slug)}`} variant="secondary" className="w-full" plain>
                 Télécharger
               </LinkButton>
               <FavoriteButton kind="Document" entityId={doc.id} className="w-full justify-center" />
+              {showQuota ? (
+                <p className="rounded-md bg-paper-sunken p-2 text-xs text-ink-muted">
+                  {quota.remaining > 0
+                    ? <>Il vous reste <strong>{quota.remaining}</strong> téléchargement{quota.remaining > 1 ? "s" : ""} gratuit{quota.remaining > 1 ? "s" : ""}. </>
+                    : <>Vous avez utilisé vos téléchargements gratuits. </>}
+                  <Link href="/classify" className="link">Classez quelques documents</Link> pour en gagner d’autres.
+                </p>
+              ) : null}
             </div>
           ) : (
             <LinkButton href={`/login?next=/documents/${doc.slug}`} variant="primary" className="w-full">

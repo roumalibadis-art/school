@@ -40,7 +40,7 @@ export interface DocumentDto {
   description?: string | null;
   type: DocumentType;
   status: string;
-  moduleId: string;
+  moduleId: string | null;
   academicYearId?: string | null;
   sessionId?: string | null;
   fileName: string;
@@ -57,6 +57,8 @@ export interface DocumentDto {
   solutionDocumentIds: string[];
   publishedAt?: string | null;
   createdAt: string;
+  classificationStatus?: string;
+  verificationStatus?: string;
 }
 
 export interface SearchHit {
@@ -71,4 +73,81 @@ export interface SearchHit {
   session?: string | null;
   isPremium: boolean;
   hasPreview: boolean;
+}
+
+/* ---------- community classification ---------- */
+
+export interface QuotaStatus {
+  enabled: boolean;
+  exempt: boolean;
+  allowed: number;
+  used: number;
+  remaining: number;
+  bonusEarned: number;
+  resetsAt: string | null;
+  bonusPerContribution: number;
+  totalDownloads: number;
+  validContributions: number;
+  documentsPerTask: number;
+}
+
+export interface ClassifyPrompt {
+  shouldPrompt: boolean;
+  reason: "login" | "downloads" | null;
+  hasOpenTask: boolean;
+  openTaskRemaining: number;
+  documentsPerTask: number;
+  availableDocuments: number;
+  quota: QuotaStatus;
+}
+
+export interface TaskItem {
+  assignmentId: string;
+  documentId: string;
+  status: "Assigned" | "Completed" | "Skipped" | "Expired";
+  title: string;
+  fileName: string;
+  fileSize: number;
+  pageCount: number | null;
+  mimeType: string;
+  hasPreview: boolean;
+  description: string | null;
+  source: string | null;
+  uploadedAt: string;
+}
+
+export interface ClassificationTask {
+  id: string;
+  trigger: string;
+  expiresAt: string;
+  total: number;
+  resolved: number;
+  items: TaskItem[];
+}
+
+export interface TaxonomyOption {
+  id: string;
+  name: string;
+  parentId: string | null;
+  pending?: boolean;
+  proposalId?: string | null;
+}
+
+export interface ClassificationOptions {
+  departments: TaxonomyOption[];
+  specialties: TaxonomyOption[];
+  academicYears: TaxonomyOption[];
+  sessions: TaxonomyOption[];
+  documentTypes: { value: string; label: string }[];
+  myPendingProposals: { id: string; name: string; category: string; parentId: string | null }[];
+}
+
+export interface VoteResult {
+  documentId: string;
+  outcome: string;
+  rewarded: boolean;
+  bonusDownloadsGranted: number;
+  remaining: number;
+  taskCompleted: boolean;
+  quota: QuotaStatus;
 }

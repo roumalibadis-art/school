@@ -71,14 +71,24 @@ export function LinkButton({
   variant = "primary",
   className,
   children,
+  plain,
 }: {
   href: string;
   variant?: Variant;
   className?: string;
   children: ReactNode;
+  /**
+   * Render a plain `<a>` (full navigation, no router prefetch / RSC fetch). Required for links whose GET has side
+   * effects, e.g. `/dl/…` issues a download ticket and may spend a free download.
+   */
+  plain?: boolean;
 }) {
+  const classes = cx(buttonBase, buttonVariants[variant], className);
+  if (plain) {
+    return <a href={href} className={classes}>{children}</a>;
+  }
   return (
-    <Link href={href} className={cx(buttonBase, buttonVariants[variant], className)}>
+    <Link href={href} className={classes}>
       {children}
     </Link>
   );

@@ -6,7 +6,7 @@ import { Badge, Card, Container, EmptyState, SectionHeading } from "@/components
 import { authedApiGet } from "@/lib/api";
 import { documentTypeLabel, formatDate } from "@/lib/format";
 import { getCurrentUser } from "@/lib/session";
-import type { DocumentDto } from "@/lib/types";
+import type { DocumentDto, QuotaStatus } from "@/lib/types";
 
 export const metadata: Metadata = { title: "Tableau de bord", robots: { index: false } };
 
@@ -39,6 +39,7 @@ export default async function DashboardPage() {
   if (!user.specialty || !user.level) redirect("/profile?welcome=1");
 
   const dash = await authedApiGet<Dashboard>("/api/me/dashboard");
+  const contrib = await authedApiGet<{ validContributions: number; quota: QuotaStatus }>("/api/classification/me").catch(() => null);
 
   return (
     <Container className="py-10">
@@ -50,6 +51,23 @@ export default async function DashboardPage() {
           <SubscriptionBadge subscription={dash.subscription} />
         </p>
       </header>
+
+      {contrib ? (
+        <Card className="mb-10 flex flex-wrap items-center justify-between gap-4 p-4">
+          <div className="text-sm">
+            <p className="font-semibold">Aidez à classer les documents</p>
+            <p className="mt-1 text-ink-muted">
+              {contrib.validContributions} contribution{contrib.validContributions > 1 ? "s" : ""} validée{contrib.validContributions > 1 ? "s" : ""}
+              {contrib.quota.enabled && !contrib.quota.exempt
+                ? ` · ${contrib.quota.remaining} téléchargement${contrib.quota.remaining > 1 ? "s" : ""} restant${contrib.quota.remaining > 1 ? "s" : ""}`
+                : ""}
+            </p>
+          </div>
+          <Link href="/classify" className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white no-underline hover:bg-brand-strong">
+            Classer des documents
+          </Link>
+        </Card>
+      ) : null}
 
       <section className="mb-10">
         <SectionHeading title="Mes modules" />

@@ -77,9 +77,9 @@ export function ProfileForm({ action, initial }: { action: Action; initial: Init
     void fetchList("universities").then(setUniversities);
   }, []);
 
+  // The university is optional: without one, every faculty is offered (no dependency on it).
   useEffect(() => {
-    if (!universityId) { setFaculties([]); return; }
-    void fetchList("faculties", universityId).then(setFaculties);
+    void fetchList("faculties", universityId || undefined).then(setFaculties);
   }, [universityId]);
 
   useEffect(() => {
@@ -121,9 +121,9 @@ export function ProfileForm({ action, initial }: { action: Action; initial: Init
         <input name="studentId" defaultValue={initial.studentId ?? ""} className="w-full rounded-md border border-line bg-paper-raised px-3 py-2" />
       </label>
 
-      <Select label="Université" placeholder="Choisir…" value={universityId} options={universities}
+      <Select label="Université (optionnel)" placeholder="Aucune / non précisée" value={universityId} options={universities}
         onChange={(v) => { setUniversityId(v); setFacultyId(""); setDepartmentId(""); setSpecialtyId(""); setLevelId(""); }} />
-      <Select label="Faculté" placeholder="Choisir…" value={facultyId} options={faculties} disabled={!universityId}
+      <Select label="Faculté" placeholder="Choisir…" value={facultyId} options={faculties}
         onChange={(v) => { setFacultyId(v); setDepartmentId(""); setSpecialtyId(""); setLevelId(""); }} />
       <Select label="Département" placeholder="Choisir…" value={departmentId} options={departments} disabled={!facultyId}
         onChange={(v) => { setDepartmentId(v); setSpecialtyId(""); setLevelId(""); }} />

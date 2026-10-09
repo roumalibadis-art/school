@@ -9,6 +9,13 @@ const API_URL = process.env.API_URL ?? "http://localhost:5178";
  * `?inline=1` serves it for in-browser viewing (PRD §30); default is an attachment.
  */
 export async function GET(request: NextRequest, ctx: { params: Promise<{ slug: string }> }) {
+  // A GET here has side effects (issues a ticket, counts a download, may consume the free allowance), so browser
+  // or router prefetching must never reach the API.
+  const purpose = `${request.headers.get("purpose") ?? ""} ${request.headers.get("sec-purpose") ?? ""}`.toLowerCase();
+  if (request.headers.has("next-router-prefetch") || request.headers.has("rsc") || purpose.includes("prefetch")) {
+    return new NextResponse(null, { status: 204, headers: { "Cache-Control": "no-store" } });
+  }
+
   const { slug } = await ctx.params;
   const token = (await cookies()).get(ACCESS_COOKIE)?.value;
   if (!token) {
@@ -22,7 +29,11 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ slug: s
   });
 
   if (!ticketRes.ok) {
-    const body = (await ticketRes.json().catch(() => ({}))) as { message?: string };
+    const body = (await ticketRes.json().catch(() => ({}))) as { message?: string; errors?: string[] };
+    // Free allowance used up: explain it and show the way to earn more, instead of dumping JSON.
+    if (ticketRes.status === 403 && body.errors?.includes("contribution_required")) {
+      return NextResponse.redirect(new URL("/classify?reason=quota", request.url));
+    }
     return NextResponse.json({ message: body.message ?? "Téléchargement refusé" }, { status: ticketRes.status });
   }
 

@@ -35,3 +35,12 @@ export function formatBytes(bytes: number): string {
 export function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
 }
+
+/** Why a document is waiting for an administrator (values come from the API's review reasons). */
+export const reasonLabels: Record<string, string> = {
+  conflict: "Votes contradictoires",
+  insufficient_agreement: "Accord insuffisant",
+  pending_taxonomy: "Valeur proposée en attente",
+  non_educational: "Jugé non pédagogique",
+  reopened: "Rouvert",
+};
