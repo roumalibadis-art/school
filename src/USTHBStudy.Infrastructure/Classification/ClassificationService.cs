@@ -133,13 +133,15 @@ public sealed class ClassificationService : IClassificationService
                 return await MapTaskAsync(open, ct);
             }
 
+            await StatsOps.EnsureAsync(_db, _clock, userId, ct);
+
+            // The candidate read happens inside the transaction so what we decide on and what we lock agree.
+            await using var tx = await _db.Database.BeginTransactionAsync(ct);
             var candidates = await CandidatesAsync(userId, settings, now, settings.DocumentsPerTask, ct);
             if (candidates.Count == 0)
             {
                 return null;
             }
-
-            await using var tx = await _db.Database.BeginTransactionAsync(ct);
 
             var task = new ClassificationTask
             {
@@ -150,24 +152,24 @@ public sealed class ClassificationService : IClassificationService
             };
             _db.ClassificationTasks.Add(task);
 
-            var documents = await _db.Documents.Where(d => candidates.Contains(d.Id)).ToListAsync(ct);
-            foreach (var doc in documents)
+            // Lock each document in a fixed (id) order: concurrent assigners cannot deadlock, and one that read
+            // a slot count another has since consumed fails the version check and retries.
+            foreach (var candidate in candidates.OrderBy(c => c.Id))
             {
+                await DocumentLock.AcquireAsync(_db, candidate.Id, candidate.Version, ct);
                 task.Assignments.Add(new ClassificationAssignment
                 {
-                    DocumentId = doc.Id,
+                    DocumentId = candidate.Id,
                     UserId = userId,
-                    Round = doc.VotingRound,
+                    Round = candidate.Round,
                     AssignedAt = now,
                     ExpiresAt = task.ExpiresAt,
                 });
-                // Touching the token makes a concurrent assignment/vote on the same document conflict.
-                doc.ClassificationVersion++;
             }
 
             await _db.SaveChangesAsync(ct);
 
-            var assigned = documents.Count;
+            var assigned = candidates.Count;
             await _db.ContributionStats.Where(s => s.UserId == userId)
                 .ExecuteUpdateAsync(u => u
                     .SetProperty(s => s.TasksAssigned, s => s.TasksAssigned + 1)
@@ -216,7 +218,9 @@ public sealed class ClassificationService : IClassificationService
     /// round, never previously assigned to or voted on by this user, and not uploaded by them. Documents
     /// closest to reaching quorum come first so they resolve sooner.
     /// </summary>
-    private async Task<List<Guid>> CandidatesAsync(
+    private sealed record Candidate(Guid Id, long Version, int Round);
+
+    private async Task<List<Candidate>> CandidatesAsync(
         Guid userId, ClassificationSettings settings, DateTime now, int take, CancellationToken ct)
     {
         var required = settings.RequiredVoters;
@@ -233,6 +237,8 @@ public sealed class ClassificationService : IClassificationService
             {
                 d.Id,
                 d.CreatedAt,
+                d.ClassificationVersion,
+                d.VotingRound,
                 Taken = _db.ClassificationAssignments.Count(a =>
                     a.DocumentId == d.Id && a.Round == d.VotingRound
                     && (a.Status == AssignmentStatus.Completed
@@ -243,7 +249,7 @@ public sealed class ClassificationService : IClassificationService
             .Take(take)
             .ToListAsync(ct);
 
-        return rows.Select(r => r.Id).ToList();
+        return rows.Select(r => new Candidate(r.Id, r.ClassificationVersion, r.VotingRound)).ToList();
     }
 
     private async Task<ClassificationTaskDto> MapTaskAsync(ClassificationTask task, CancellationToken ct)
@@ -282,12 +288,14 @@ public sealed class ClassificationService : IClassificationService
         {
             (result, audit) = await ConcurrencyRetry.RunAsync(_db, () => SubmitOnceAsync(userId, assignmentId, request, ct));
         }
-        catch (DbUpdateException)
+        catch (Exception ex) when (ConcurrencyRetry.IsUniqueViolation(ex) || ex is DbUpdateConcurrencyException)
         {
-            // A unique index fired: the same user already holds a vote for this document/round (double
-            // submit, or two racing requests). Never surface provider errors.
+            // A unique index fired (the same user already holds a vote for this document/round — double submit
+            // or racing requests) or contention outlasted the retries. Never surface provider errors.
             _db.ChangeTracker.Clear();
-            throw new ConflictException("You have already classified this document.");
+            throw new ConflictException(ex is DbUpdateConcurrencyException
+                ? "Too many people are answering this document right now — please try again."
+                : "You have already classified this document.");
         }
 
         if (audit is not null)
@@ -364,6 +372,9 @@ public sealed class ClassificationService : IClassificationService
 
         await using var tx = await _db.Database.BeginTransactionAsync(ct);
 
+        // Take the document lock before anything else (see DocumentLock): voters on the same document queue here.
+        await DocumentLock.AcquireAsync(_db, document, ct);
+
         // Reward bookkeeping first (atomic, inside the transaction): a rolled-back vote rolls these back too.
         await StatsOps.EnsureAsync(_db, _clock, userId, ct);
         await StatsOps.ResetRewardDayIfDueAsync(_db, userId, now.Date, ct);
@@ -372,7 +383,6 @@ public sealed class ClassificationService : IClassificationService
         _db.ClassificationVotes.Add(vote);
         assignment.Status = AssignmentStatus.Completed;
         assignment.ResolvedAt = now;
-        document.ClassificationVersion++;
 
         // Evaluate consensus over every vote of this round (existing + the one being added).
         var existing = await _db.ClassificationVotes
@@ -576,6 +586,7 @@ public sealed class ClassificationService : IClassificationService
                 throw new ConflictException("This assignment has already been answered.");
             }
 
+            await StatsOps.EnsureAsync(_db, _clock, userId, ct);
             await using var tx = await _db.Database.BeginTransactionAsync(ct);
 
             // A skip frees the slot for another voter, carries no reward and no penalty, and the same user

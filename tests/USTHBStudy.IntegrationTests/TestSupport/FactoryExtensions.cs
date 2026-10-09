@@ -3,11 +3,12 @@ namespace USTHBStudy.IntegrationTests.TestSupport;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Microsoft.AspNetCore.Mvc.Testing;
 
 public static class FactoryExtensions
 {
     /// <summary>A client whose Authorization header carries a fresh access token for the given account.</summary>
-    public static async Task<HttpClient> LoggedInClientAsync(this ApiFactory factory, string email, string password)
+    public static async Task<HttpClient> LoggedInClientAsync(this WebApplicationFactory<Program> factory, string email, string password)
     {
         var client = factory.CreateClient();
         var login = await client.PostAsJsonAsync("/api/auth/login", new { email, password });
@@ -17,14 +18,14 @@ public static class FactoryExtensions
         return client;
     }
 
-    public static Task<HttpClient> AdminClientAsync(this ApiFactory factory) =>
+    public static Task<HttpClient> AdminClientAsync(this WebApplicationFactory<Program> factory) =>
         factory.LoggedInClientAsync(ApiFactory.AdminEmail, ApiFactory.AdminPassword);
 
-    public static Task<HttpClient> StudentClientAsync(this ApiFactory factory) =>
+    public static Task<HttpClient> StudentClientAsync(this WebApplicationFactory<Program> factory) =>
         factory.LoggedInClientAsync(ApiFactory.StudentEmail, ApiFactory.StudentPassword);
 
     /// <summary>Registers a brand-new student and returns an authenticated client + the account email.</summary>
-    public static async Task<(HttpClient Client, string Email)> NewStudentClientAsync(this ApiFactory factory)
+    public static async Task<(HttpClient Client, string Email)> NewStudentClientAsync(this WebApplicationFactory<Program> factory)
     {
         var client = factory.CreateClient();
         var email = $"stud-{Guid.NewGuid():N}@example.local";

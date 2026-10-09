@@ -19,7 +19,11 @@ public static partial class TaxonomyText
             return string.Empty;
         }
 
-        var cleaned = new string(value.Where(c => !char.IsControl(c)).ToArray());
+        // Tabs / newlines are separators; every other control character is dropped.
+        var cleaned = new string(value
+            .Select(c => c is '\t' or '\n' or '\r' ? ' ' : c)
+            .Where(c => !char.IsControl(c))
+            .ToArray());
         return Whitespace().Replace(cleaned.Normalize(NormalizationForm.FormC).Trim(), " ");
     }
 

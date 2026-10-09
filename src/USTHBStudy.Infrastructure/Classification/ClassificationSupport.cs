@@ -1,6 +1,7 @@
 namespace USTHBStudy.Infrastructure.Classification;
 
 using Microsoft.EntityFrameworkCore;
+using MySqlConnector;
 using USTHBStudy.Application.Abstractions;
 using USTHBStudy.Application.Classification;
 using USTHBStudy.Domain.Classification;
@@ -114,10 +115,10 @@ internal static class StatsOps
                 s => s.QuotaBonusEarned + bonus > maxBonus ? maxBonus : s.QuotaBonusEarned + bonus), ct);
 }
 
-/// <summary>Optimistic-concurrency retry shared by every mutation of voting state.</summary>
+/// <summary>Optimistic-concurrency / deadlock retry shared by every mutation of voting state.</summary>
 internal static class ConcurrencyRetry
 {
-    public static async Task<T> RunAsync<T>(AppDbContext db, Func<Task<T>> action, int attempts = 6)
+    public static async Task<T> RunAsync<T>(AppDbContext db, Func<Task<T>> action, int attempts = 8)
     {
         for (var attempt = 1; ; attempt++)
         {
@@ -125,11 +126,64 @@ internal static class ConcurrencyRetry
             {
                 return await action();
             }
-            catch (DbUpdateConcurrencyException) when (attempt < attempts)
+            catch (Exception ex) when (IsRetriable(ex) && attempt < attempts)
             {
                 db.ChangeTracker.Clear();
+                // Small jittered back-off so colliding requests do not retry in lock-step.
+                await Task.Delay(Random.Shared.Next(5, 25) * attempt);
             }
         }
+    }
+
+    /// <summary>A lost optimistic-concurrency race, or a database-chosen deadlock/lock-timeout victim.</summary>
+    public static bool IsRetriable(Exception ex) =>
+        ex is DbUpdateConcurrencyException || Chain(ex).Any(e => e is MySqlException { Number: 1213 or 1205 });
+
+    /// <summary>A unique index fired (MySQL 1062 / SQLite constraint) — i.e. a duplicate, not a fault.</summary>
+    public static bool IsUniqueViolation(Exception ex) =>
+        Chain(ex).Any(e => e is MySqlException { Number: 1062 }
+                           || e.GetType().Name == "SqliteException" && e.Message.Contains("UNIQUE constraint", StringComparison.OrdinalIgnoreCase));
+
+    private static IEnumerable<Exception> Chain(Exception ex)
+    {
+        for (var e = ex; e is not null; e = e.InnerException!)
+        {
+            yield return e;
+            if (e.InnerException is null)
+            {
+                yield break;
+            }
+        }
+    }
+}
+
+internal static class DocumentLock
+{
+    /// <summary>
+    /// Compare-and-bump of the document's voting version in one atomic statement. It doubles as the row lock: every
+    /// transaction takes it first, so competing voters/assigners queue up on the same row instead of deadlocking on
+    /// each other's later writes, and anyone working from a stale read loses cleanly (and retries).
+    /// </summary>
+    public static async Task AcquireAsync(AppDbContext db, Guid documentId, long expectedVersion, CancellationToken ct)
+    {
+        var updated = await db.Documents
+            .Where(d => d.Id == documentId && d.ClassificationVersion == expectedVersion)
+            .ExecuteUpdateAsync(u => u.SetProperty(d => d.ClassificationVersion, expectedVersion + 1), ct);
+        if (updated != 1)
+        {
+            throw new DbUpdateConcurrencyException("The document's voting state changed concurrently.");
+        }
+    }
+
+    /// <summary>Same, for a tracked entity: keeps its token in step so a later SaveChanges does not trip over our own bump.</summary>
+    public static async Task AcquireAsync(AppDbContext db, Document document, CancellationToken ct)
+    {
+        var expected = document.ClassificationVersion;
+        await AcquireAsync(db, document.Id, expected, ct);
+        var entry = db.Entry(document);
+        entry.Property(d => d.ClassificationVersion).OriginalValue = expected + 1;
+        entry.Property(d => d.ClassificationVersion).CurrentValue = expected + 1;
+        entry.Property(d => d.ClassificationVersion).IsModified = false;
     }
 }
 

@@ -18,6 +18,11 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
     private readonly SqliteConnection _connection = new("DataSource=:memory:");
 
+    /// <summary>Extra configuration / service overrides for a specific test (applied when the host is built).</summary>
+    public Dictionary<string, string> Settings { get; } = new();
+
+    public Action<IServiceCollection>? ConfigureExtraServices { get; set; }
+
     public const string AdminEmail = "admin@example.local";
     public const string AdminPassword = "Admin#2026!";
     public const string StudentEmail = "student@example.local";
@@ -38,6 +43,11 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
             "Storage:LocalRootPath",
             Path.Combine(Path.GetTempPath(), "usthb-tests", Guid.NewGuid().ToString("N")));
 
+        foreach (var (key, value) in Settings)
+        {
+            builder.UseSetting(key, value);
+        }
+
         builder.ConfigureTestServices(services =>
         {
             services.RemoveAll<DbContextOptions<AppDbContext>>();
@@ -49,6 +59,8 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
                 options.UseSqlite(_connection);
                 options.AddInterceptors(sp.GetRequiredService<AuditableEntityInterceptor>());
             });
+
+            ConfigureExtraServices?.Invoke(services);
         });
     }
 
