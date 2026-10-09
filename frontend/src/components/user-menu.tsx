@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { logoutAction } from "@/lib/auth-actions";
 
@@ -10,13 +11,16 @@ type Session =
 
 export function UserMenu() {
   const [session, setSession] = useState<Session | null>(null);
+  const pathname = usePathname();
 
+  // Re-check on every navigation: the header lives in the root layout, so a login/logout done through a server
+  // action (a client-side redirect) would otherwise leave a stale "Connexion" / user name until a hard refresh.
   useEffect(() => {
     fetch("/api/session", { cache: "no-store" })
       .then((r) => r.json())
       .then(setSession)
       .catch(() => setSession({ authenticated: false }));
-  }, []);
+  }, [pathname]);
 
   if (!session) return <span className="w-16" aria-hidden />;
 

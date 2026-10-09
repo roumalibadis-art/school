@@ -1,6 +1,7 @@
 namespace USTHBStudy.Domain.Documents;
 
 using USTHBStudy.Domain.Academic;
+using USTHBStudy.Domain.Classification;
 using USTHBStudy.Domain.Common;
 
 /// <summary>An academic document and its metadata (PRD §12). The binary lives in object storage;
@@ -15,8 +16,17 @@ public class Document : AuditableEntity, ISoftDeletable
     public DocumentStatus Status { get; set; } = DocumentStatus.Draft;
 
     // Classification
-    public Guid ModuleId { get; set; }
+    /// <summary>Null while the document is unclassified (community queue); required to publish.</summary>
+    public Guid? ModuleId { get; set; }
     public Module? Module { get; set; }
+
+    /// <summary>Direct specialty/department classification for documents without a module yet.
+    /// When a module is set, the module's own specialty remains the finer-grained source.</summary>
+    public Guid? SpecialtyId { get; set; }
+    public Specialty? Specialty { get; set; }
+
+    public Guid? DepartmentId { get; set; }
+    public Department? Department { get; set; }
 
     public Guid? AcademicYearId { get; set; }
     public AcademicYear? AcademicYear { get; set; }
@@ -43,6 +53,23 @@ public class Document : AuditableEntity, ISoftDeletable
     public string? PermissionNotes { get; set; }
 
     public Guid? UploadedById { get; set; }
+
+    // Community classification (kept separate: classification ≠ verification)
+    public ClassificationStatus ClassificationStatus { get; set; } = ClassificationStatus.Classified;
+    public VerificationStatus VerificationStatus { get; set; } = VerificationStatus.Unverified;
+
+    /// <summary>Incremented when an admin reopens classification; votes/assignments are per round.</summary>
+    public int VotingRound { get; set; } = 1;
+
+    /// <summary>Optimistic-concurrency token bumped by every voting/assignment mutation.</summary>
+    public long ClassificationVersion { get; set; }
+
+    /// <summary>Why the document is waiting for an administrator (conflict, insufficient agreement…).</summary>
+    public string? ClassificationReviewReason { get; set; }
+
+    public DateTime? ClassifiedAt { get; set; }
+    public DateTime? VerifiedAt { get; set; }
+    public Guid? VerifiedById { get; set; }
 
     // Moderation
     public string? ReviewNote { get; set; }

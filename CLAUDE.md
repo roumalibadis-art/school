@@ -4,11 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-**Phases 1–7 complete; Phase 8 (Quality) starting.** See `docs/roadmap.md` for per-phase status and the
-PRD §83 reports. Backend: build green, **101 tests** pass, 6 migrations applied to local MySQL. Frontend:
+**Phases 1–7 complete; Phase 8 (Quality) starting; Enhancement E1 (community classification) complete.** See
+`docs/roadmap.md` for per-phase status and the PRD §83 reports. Backend: build green, **267 tests** pass
+(116 unit + 151 integration; 10 of those need MySQL via `USTHB_TEST_MYSQL`), 7 migrations. Frontend:
 `frontend/` Next.js 15 — public site + student area (dashboard/favorites/PDF viewer/Premium checkout/
-contribute) + `/admin` console (dashboard, users, contributions, reports, payments, plans, audit).
-`next build` clean (34 routes). PRD §61 tests #1–#7 covered; audit log + in-app notifications live.
+contribute/**classify**) + `/admin` console (dashboard, users, contributions, reports, payments, plans, audit,
+**classification, taxonomy proposals, contribution settings**). `next build` clean (40 routes); 10 Playwright E2E
+tests (`frontend/e2e`). PRD §61 tests #1–#7 covered; audit log + in-app notifications live. Google sign-in is
+optional (see `docs/google-auth.md`). Design of the classification system: `docs/classification.md`.
 
 **`PRD.md` is the single source of truth.** Read it before making architectural decisions. It is numbered in sections (1–84); cite sections when justifying choices. The workflow it mandates (see below) is binding, not advisory. Confirmed deviations: **net8.0** target, **no Docker** (§58), S3/search/payment adapters land in their feature phases.
 
@@ -68,7 +71,8 @@ references. Ports are declared in `Application/Abstractions`; implementations li
 # Backend — run from repo root
 dotnet tool restore                                     # once, restores pinned dotnet-ef 8.0.16
 dotnet build USTHBStudy.sln                             # warnings are errors
-dotnet test USTHBStudy.sln                              # all 71 tests (unit + integration/SQLite)
+dotnet test USTHBStudy.sln                              # unit + integration/SQLite (MySQL-backed ones skip)
+USTHB_TEST_MYSQL='Server=localhost;User=u;Password=p;' dotnet test USTHBStudy.sln   # + real-MySQL concurrency/migration tests
 dotnet test tests/USTHBStudy.UnitTests                  # one project
 dotnet test --filter "FullyQualifiedName~AccessControlServiceTests"   # one class
 dotnet run --project src/USTHBStudy.API                 # http://localhost:5178  (/swagger, /health)
@@ -80,6 +84,7 @@ dotnet ef database update       -p src/USTHBStudy.Infrastructure -s src/USTHBStu
 # Frontend (from frontend/) — proxies /api/* to API_URL (default http://localhost:5178)
 cp .env.local.example .env.local && npm install && npm run dev   # http://localhost:3000
 npm run build                                                     # prod build + type-check
+npm run e2e                                                       # Playwright over the real stack — see frontend/e2e/README.md
 ```
 
 **Local setup already done:** MySQL db `usthbstudy` + user `usthb_app` exist; the API's
@@ -121,6 +126,11 @@ Dev demo accounts (Development only): `admin@example.local` / `Admin#2026!`,
 - Architect for i18n (French / Arabic / English) and RTL from the start — do not hard-code user-facing strings; do not blindly mirror the layout for RTL (§72, §73).
 - No fake features: no dead buttons, no simulated payments, no faked stats. Mark unimplemented things "coming soon" or hide them (§79).
 - Prepare for PWA (manifest, icons, installable). Do not offline-cache Premium content (§50).
+
+**Community classification (Enhancement E1):** consensus, triggers, quota and rewards are *data* edited in
+`/admin/classification/settings` — never hard-code thresholds. The quota only ever adds a restriction: it must
+never bypass Premium, roles, suspension or authentication. Pending taxonomy proposals are not taxonomy: they must
+never appear in public lists or search. `/dl/*` and any GET with side effects must not be prefetched.
 
 **Content rights:** store `Source`, `Uploader`, `RightsStatus`, `PermissionNotes` on documents; provide a reporting mechanism; do not build anything whose purpose is circumventing copyright (§40).
 

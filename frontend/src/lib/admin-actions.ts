@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { adminSend } from "@/lib/admin";
 
 async function run(method: "POST" | "PUT" | "DELETE", path: string, body: unknown, revalidate: string) {
@@ -75,4 +76,85 @@ export async function savePlanAction(formData: FormData) {
 export async function deletePlanAction(formData: FormData) {
   const id = String(formData.get("id"));
   await run("DELETE", `/api/admin/subscription-plans/${id}`, undefined, "/admin/plans");
+}
+
+// --- community classification ---
+const optional = (formData: FormData, name: string) => {
+  const v = String(formData.get(name) ?? "").trim();
+  return v.length > 0 ? v : null;
+};
+
+export async function verifyClassificationAction(formData: FormData) {
+  const id = String(formData.get("id"));
+  const result = await adminSend("POST", `/api/admin/classification/documents/${id}/verify`, {
+    specialtyId: optional(formData, "specialtyId"),
+    departmentId: optional(formData, "departmentId"),
+    documentType: optional(formData, "documentType"),
+    academicYearId: optional(formData, "academicYearId"),
+    sessionId: optional(formData, "sessionId"),
+    moduleId: optional(formData, "moduleId"),
+    note: optional(formData, "note"),
+  });
+  revalidatePath(`/admin/classification/${id}`);
+  revalidatePath("/admin/classification");
+  redirect(`/admin/classification/${id}?${result.ok ? "done=verified" : `error=${encodeURIComponent(result.errors[0] ?? result.message)}`}`);
+}
+
+export async function rejectClassificationAction(formData: FormData) {
+  const id = String(formData.get("id"));
+  const result = await adminSend("POST", `/api/admin/classification/documents/${id}/reject`, { note: optional(formData, "note") });
+  revalidatePath("/admin/classification");
+  redirect(`/admin/classification/${id}?${result.ok ? "done=rejected" : `error=${encodeURIComponent(result.message)}`}`);
+}
+
+export async function reopenClassificationAction(formData: FormData) {
+  const id = String(formData.get("id"));
+  const result = await adminSend("POST", `/api/admin/classification/documents/${id}/reopen`, { note: optional(formData, "note") });
+  revalidatePath("/admin/classification");
+  redirect(`/admin/classification/${id}?${result.ok ? "done=reopened" : `error=${encodeURIComponent(result.message)}`}`);
+}
+
+export type SettingsState = { ok?: boolean; message?: string };
+
+const INT_FIELDS = [
+  "documentsPerTask", "assignmentExpiryHours", "minSecondsBeforeVote", "requiredVoters", "agreementPercent",
+  "nonEducationalPercent", "downloadsPerPrompt", "promptSnoozeMinutes", "freeDownloadsPerWindow", "quotaWindowDays",
+  "bonusDownloadsPerContribution", "maxBonusPerWindow", "maxRewardedContributionsPerDay", "maxPendingProposalsPerUser",
+] as const;
+const BOOL_FIELDS = ["loginTriggerEnabled", "downloadTriggerEnabled", "quotaEnabled"] as const;
+
+export async function saveClassificationSettingsAction(_prev: SettingsState, formData: FormData): Promise<SettingsState> {
+  const body: Record<string, unknown> = {
+    requiredFields: formData.getAll("requiredFields").map(String),
+    nonEducationalPolicy: String(formData.get("nonEducationalPolicy") ?? "SendToReview"),
+  };
+  for (const f of INT_FIELDS) body[f] = Number(formData.get(f));
+  for (const f of BOOL_FIELDS) body[f] = formData.get(f) === "on";
+
+  const result = await adminSend("PUT", "/api/admin/classification/settings", body);
+  revalidatePath("/admin/classification/settings");
+  return result.ok
+    ? { ok: true, message: "Paramètres enregistrés." }
+    : { ok: false, message: result.errors.length ? result.errors.join(" · ") : result.message };
+}
+
+// --- taxonomy proposals ---
+export async function proposalDecisionAction(formData: FormData) {
+  const id = String(formData.get("id"));
+  const decision = String(formData.get("decision"));
+  const body: Record<string, unknown> = { note: optional(formData, "note") };
+  if (decision === "approve") {
+    body.name = optional(formData, "name");
+    body.parentId = optional(formData, "parentId");
+  } else if (decision === "rename") {
+    body.name = String(formData.get("name") ?? "");
+  } else if (decision === "merge") {
+    body.targetId = optional(formData, "targetId");
+    body.targetDocumentType = optional(formData, "targetDocumentType");
+  }
+  const result = await adminSend("POST", `/api/admin/taxonomy/proposals/${id}/${decision}`, body);
+  revalidatePath("/admin/taxonomy");
+  if (!result.ok) {
+    redirect(`/admin/taxonomy?error=${encodeURIComponent(result.errors[0] ?? result.message)}`);
+  }
 }

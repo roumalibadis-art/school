@@ -70,7 +70,7 @@ public sealed class AdminDashboardService : IAdminDashboardService
         // SQL aggregation once document volume grows.
         var publishedDocs = await _db.Documents.AsNoTracking()
             .Where(d => d.Status == DocumentStatus.Published)
-            .Select(d => new { d.Id, d.Title, d.Slug, d.ModuleId, d.ViewCount })
+            .Select(d => new { d.Id, d.Title, d.Slug, ModuleId = d.ModuleId ?? Guid.Empty, d.ViewCount })
             .ToListAsync(ct);
         var moduleById = (await _db.Modules.AsNoTracking()
                 .Select(m => new { m.Id, m.Name, m.Slug, m.SpecialtyId }).ToListAsync(ct))

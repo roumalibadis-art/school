@@ -20,6 +20,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="MigrationData\*.sql" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\USTHBStudy.API\USTHBStudy.API.csproj" />
     <ProjectReference Include="..\..\src\USTHBStudy.Infrastructure\USTHBStudy.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\USTHBStudy.Application\USTHBStudy.Application.csproj" />

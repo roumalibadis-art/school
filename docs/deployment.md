@@ -85,3 +85,24 @@ multi-stage API `Dockerfile` (sdk → aspnet) and a compose file with `mysql`, a
 - `/health/live` — process up.
 - `/health/ready` — MySQL reachable + storage reachable.
 - Serilog → console (structured) + rolling file (`logs/usthbstudy-.log`, daily). Ship to a sink in staging/prod.
+
+## Community classification & Google (additional configuration)
+
+| Key | Source | Notes |
+|---|---|---|
+| `Authentication:Google:ClientId` / `ClientSecret` / `RedirectUri` / `FrontendBaseUrl` | secret / env | feature off when any of the first three is empty — see [google-auth.md](google-auth.md) |
+| `Authentication:Google:AuthorizationEndpoint` / `TokenEndpoint` / `JwksUri` | appsettings | Google defaults; overridden only by the E2E fake IdP |
+| `API_URL` (frontend) | env, **build time** | baked into the `/api/*` rewrite; set it for `next build` |
+
+Behaviour (task size, consensus, triggers, quota) is **runtime data**, edited at `/admin/classification/settings`.
+Apply the migration before deploying (`dotnet ef database update …`). Run behind HTTPS and keep the Data Protection
+key ring persistent/shared if you scale out.
+
+### Tests
+```bash
+dotnet test USTHBStudy.sln                                    # unit + SQLite integration (MySQL-backed tests skip)
+export USTHB_TEST_MYSQL='Server=localhost;User=<u>;Password=<p>;'   # enables concurrency + migration tests
+dotnet test USTHBStudy.sln
+cd frontend && npm ci && npx tsc --noEmit && npm run build
+E2E_DB_CONNECTION='Server=localhost;Database=usthb_e2e;User=<u>;Password=<p>;' E2E_MYSQL_ADMIN='mysql -uroot' npm run e2e
+```

@@ -7,7 +7,7 @@ public sealed record DocumentDto(
     string? Description,
     string Type,
     string Status,
-    Guid ModuleId,
+    Guid? ModuleId,
     Guid? AcademicYearId,
     Guid? SessionId,
     string FileName,
@@ -23,13 +23,15 @@ public sealed record DocumentDto(
     Guid? SolutionForDocumentId,
     IReadOnlyList<Guid> SolutionDocumentIds,
     DateTime? PublishedAt,
-    DateTime CreatedAt);
+    DateTime CreatedAt,
+    string ClassificationStatus = "Classified",
+    string VerificationStatus = "Unverified");
 
 /// <summary>Metadata for an upload — the binary is carried separately as a <see cref="DocumentFile"/>.</summary>
 public sealed record DocumentUploadRequest(
     string Title,
     string Type,
-    Guid ModuleId,
+    Guid? ModuleId,
     Guid? AcademicYearId,
     Guid? SessionId,
     string? Description,
@@ -41,7 +43,7 @@ public sealed record DocumentUploadRequest(
 public sealed record DocumentMetadataUpdate(
     string Title,
     string Type,
-    Guid ModuleId,
+    Guid? ModuleId,
     Guid? AcademicYearId,
     Guid? SessionId,
     string? Description,

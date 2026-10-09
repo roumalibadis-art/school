@@ -31,7 +31,7 @@ public sealed partial class MySqlSearchService : ISearchService
 
         if (query.SpecialtyId is { } specialtyId)
         {
-            q = q.Where(d => d.Module!.SpecialtyId == specialtyId);
+            q = q.Where(d => d.Module!.SpecialtyId == specialtyId || d.SpecialtyId == specialtyId);
         }
 
         if (query.SemesterId is { } semesterId)
@@ -46,12 +46,12 @@ public sealed partial class MySqlSearchService : ISearchService
 
         if (query.DepartmentId is { } departmentId)
         {
-            q = q.Where(d => d.Module!.Specialty!.DepartmentId == departmentId);
+            q = q.Where(d => d.Module!.Specialty!.DepartmentId == departmentId || d.DepartmentId == departmentId);
         }
 
         if (query.FacultyId is { } facultyId)
         {
-            q = q.Where(d => d.Module!.Specialty!.Department!.FacultyId == facultyId);
+            q = q.Where(d => d.Module!.Specialty!.Department!.FacultyId == facultyId || d.Department!.FacultyId == facultyId);
         }
 
         if (query.AcademicYearId is { } yearId)
@@ -100,9 +100,9 @@ public sealed partial class MySqlSearchService : ISearchService
                 d.Title,
                 d.Slug,
                 d.Type.ToString(),
-                d.Module!.Name,
-                d.Module.Slug,
-                d.Module.Specialty!.Name,
+                d.Module != null ? d.Module.Name : string.Empty,
+                d.Module != null ? d.Module.Slug : string.Empty,
+                d.Module != null ? d.Module.Specialty!.Name : (d.Specialty != null ? d.Specialty.Name : null),
                 d.AcademicYear != null ? d.AcademicYear.StartYear : (int?)null,
                 d.Session != null ? d.Session.Name : null,
                 d.IsPremium,

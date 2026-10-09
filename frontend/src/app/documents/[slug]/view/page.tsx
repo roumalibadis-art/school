@@ -26,7 +26,7 @@ export default async function ViewerPage({ params }: Params) {
           </Link>
           <h1 className="truncate text-sm font-semibold">{doc.title}</h1>
         </div>
-        <LinkButton href={`/dl/${encodeURIComponent(doc.slug)}`} variant="secondary">
+        <LinkButton href={`/dl/${encodeURIComponent(doc.slug)}`} variant="secondary" plain>
           Télécharger
         </LinkButton>
       </Container>

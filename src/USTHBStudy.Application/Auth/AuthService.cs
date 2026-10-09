@@ -2,6 +2,7 @@ namespace USTHBStudy.Application.Auth;
 
 using Microsoft.Extensions.Options;
 using USTHBStudy.Application.Abstractions;
+using USTHBStudy.Application.Classification;
 using USTHBStudy.Application.Auth.Dtos;
 using USTHBStudy.Application.Common;
 
@@ -17,19 +18,22 @@ public sealed class AuthService : IAuthService
     private readonly IRefreshTokenStore _refreshTokens;
     private readonly IDateTimeProvider _clock;
     private readonly JwtOptions _jwt;
+    private readonly IContributionTracker? _tracker;
 
     public AuthService(
         IIdentityService identity,
         IJwtTokenService tokens,
         IRefreshTokenStore refreshTokens,
         IDateTimeProvider clock,
-        IOptions<JwtOptions> jwt)
+        IOptions<JwtOptions> jwt,
+        IContributionTracker? tracker = null)
     {
         _identity = identity;
         _tokens = tokens;
         _refreshTokens = refreshTokens;
         _clock = clock;
         _jwt = jwt.Value;
+        _tracker = tracker;
     }
 
     public async Task<AuthResult> RegisterAsync(RegisterRequest request, string? ip, CancellationToken ct = default)
@@ -60,7 +64,29 @@ public sealed class AuthService : IAuthService
             throw new ForbiddenAppException("This account is disabled.");
         }
 
+        await RecordLoginAsync(user.Id, ct);
         return await IssueAsync(user, ip, ct);
+    }
+
+    public async Task<AuthResult> SignInExternalAsync(Guid userId, string? ip, CancellationToken ct = default)
+    {
+        var user = await _identity.FindByIdAsync(userId, ct)
+                   ?? throw new UnauthorizedAppException("Invalid sign-in.");
+        if (!user.IsActive)
+        {
+            throw new ForbiddenAppException("This account is disabled.");
+        }
+
+        await RecordLoginAsync(user.Id, ct);
+        return await IssueAsync(user, ip, ct);
+    }
+
+    private async Task RecordLoginAsync(Guid userId, CancellationToken ct)
+    {
+        if (_tracker is not null)
+        {
+            await _tracker.RecordLoginAsync(userId, ct);
+        }
     }
 
     public async Task<AuthResult> RefreshAsync(RefreshRequest request, string? ip, CancellationToken ct = default)

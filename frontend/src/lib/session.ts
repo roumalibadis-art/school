@@ -15,6 +15,7 @@ export interface SessionUser {
   premiumExpiresAt: string | null;
   roles: string[];
   permissions: string[];
+  department?: { id: string; name: string; slug: string } | null;
   specialty: { id: string; name: string; slug: string } | null;
   level: { id: string; name: string; slug: string } | null;
 }

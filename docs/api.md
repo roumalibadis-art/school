@@ -147,3 +147,33 @@ Suspended (`IsActive = false`) or expired-premium users are rejected regardless 
 ## Swagger
 
 `/swagger` in Development. JWT bearer scheme registered so protected endpoints are callable from the UI.
+
+## Community classification, taxonomy proposals & Google auth (live)
+
+Envelope and error body as everywhere else. Details and rules: [classification.md](classification.md),
+[google-auth.md](google-auth.md).
+
+**Student (`[Authorize]`)** — `api/classification`
+
+| Method & path | Purpose |
+|---|---|
+| `GET prompt` | read-only: should the UI invite the user now (`login`/`downloads`), open task, quota |
+| `POST prompt/ack` `{action: start\|later}` | consume the trigger; `start` returns the task |
+| `POST tasks/next` | open task (resumed) or a new batch; `data: null` when nothing to classify |
+| `POST assignments/{id}/vote` | `{decision: Classify\|NotEducational, specialtyId\|specialtyProposalId, departmentId\|…, documentType\|documentTypeProposalId, academicYearId\|…, sessionId\|…}` → 409 if already answered |
+| `POST assignments/{id}/skip` | no reward, no penalty |
+| `GET assignments/{id}/preview` | first-page image of a document in the caller's own open assignment only |
+| `GET options` · `GET me` | dropdown values (+ own pending proposals) · counters and quota |
+| `POST proposals` · `GET proposals/similar` | "Add new…" / look-alike check |
+
+**Download quota:** `GET /api/documents/{slug}/download` may answer **403** with `errors: ["contribution_required"]`.
+
+**Admin** — `Classification.Review`: `GET api/admin/classification/documents?queue=needs-review|conflicting|awaiting-votes|pending|rejected|verified|all`,
+`GET …/documents/{id}`, `GET …/documents/{id}/preview`, `POST …/documents/{id}/verify|reject|reopen`, `GET …/report`.
+`Classification.Settings`: `GET|PUT api/admin/classification/settings`.
+`Taxonomy.Review`: `GET api/admin/taxonomy/proposals?status&category`, `GET …/{id}`, `POST …/{id}/approve|rename|merge|reject`.
+
+**Auth** — `GET api/auth/providers`; `GET api/auth/google/start?returnUrl=` · `GET …/callback` · `POST …/exchange {ticket}`;
+authenticated: `POST api/auth/google/link`, `GET api/auth/google/status`.
+
+`DocumentDto` gains `classificationStatus`, `verificationStatus`; `moduleId` is now nullable.

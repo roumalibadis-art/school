@@ -740,6 +740,418 @@ namespace USTHBStudy.Infrastructure.Persistence.Migrations
                     b.ToTable("Notifications");
                 });
 
+            modelBuilder.Entity("USTHBStudy.Domain.Classification.ClassificationAssignment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("AssignedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<Guid>("DocumentId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime?>("ResolvedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("Round")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("TaskId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("char(36)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TaskId");
+
+                    b.HasIndex("UserId", "Status");
+
+                    b.HasIndex("DocumentId", "Round", "Status");
+
+                    b.HasIndex("DocumentId", "UserId", "Round")
+                        .IsUnique();
+
+                    b.ToTable("ClassificationAssignments");
+                });
+
+            modelBuilder.Entity("USTHBStudy.Domain.Classification.ClassificationSettings", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<int>("AgreementPercent")
+                        .HasColumnType("int");
+
+                    b.Property<int>("AssignmentExpiryHours")
+                        .HasColumnType("int");
+
+                    b.Property<int>("BonusDownloadsPerContribution")
+                        .HasColumnType("int");
+
+                    b.Property<int>("DocumentsPerTask")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("DownloadTriggerEnabled")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<int>("DownloadsPerPrompt")
+                        .HasColumnType("int");
+
+                    b.Property<int>("FreeDownloadsPerWindow")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("LoginTriggerEnabled")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<int>("MaxBonusPerWindow")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MaxPendingProposalsPerUser")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MaxRewardedContributionsPerDay")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MinSecondsBeforeVote")
+                        .HasColumnType("int");
+
+                    b.Property<int>("NonEducationalPercent")
+                        .HasColumnType("int");
+
+                    b.Property<int>("NonEducationalPolicy")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PromptSnoozeMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("QuotaEnabled")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<int>("QuotaWindowDays")
+                        .HasColumnType("int");
+
+                    b.Property<int>("RequiredFields")
+                        .HasColumnType("int");
+
+                    b.Property<int>("RequiredVoters")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<Guid?>("UpdatedById")
+                        .HasColumnType("char(36)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ClassificationSettings");
+                });
+
+            modelBuilder.Entity("USTHBStudy.Domain.Classification.ClassificationTask", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Trigger")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("char(36)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("UserId", "Status");
+
+                    b.ToTable("ClassificationTasks");
+                });
+
+            modelBuilder.Entity("USTHBStudy.Domain.Classification.ClassificationVote", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid?>("AcademicYearId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid?>("AcademicYearProposalId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<bool?>("AgreedWithOutcome")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<Guid>("AssignmentId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("Decision")
+                        .HasColumnType("int");
+
+                    b.Property<Guid?>("DepartmentId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid?>("DepartmentProposalId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid>("DocumentId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<int?>("DocumentType")
+                        .HasColumnType("int");
+
+                    b.Property<Guid?>("DocumentTypeProposalId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<bool>("Rewarded")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<int>("Round")
+                        .HasColumnType("int");
+
+                    b.Property<Guid?>("SessionId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid?>("SessionProposalId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid?>("SpecialtyId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid?>("SpecialtyProposalId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("char(36)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AcademicYearId");
+
+                    b.HasIndex("AcademicYearProposalId");
+
+                    b.HasIndex("DepartmentId");
+
+                    b.HasIndex("DepartmentProposalId");
+
+                    b.HasIndex("DocumentTypeProposalId");
+
+                    b.HasIndex("SessionId");
+
+                    b.HasIndex("SessionProposalId");
+
+                    b.HasIndex("SpecialtyId");
+
+                    b.HasIndex("SpecialtyProposalId");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("DocumentId", "Round");
+
+                    b.HasIndex("DocumentId", "UserId", "Round")
+                        .IsUnique();
+
+                    b.ToTable("ClassificationVotes");
+                });
+
+            modelBuilder.Entity("USTHBStudy.Domain.Classification.ExternalLoginTicket", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("Purpose")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)");
+
+                    b.Property<DateTime?>("UsedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("char(36)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExpiresAt");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("ExternalLoginTickets");
+                });
+
+            modelBuilder.Entity("USTHBStudy.Domain.Classification.TaxonomyProposal", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("AdminNote")
+                        .HasMaxLength(1000)
+                        .HasColumnType("varchar(1000)");
+
+                    b.Property<string>("ApprovedName")
+                        .HasMaxLength(160)
+                        .HasColumnType("varchar(160)");
+
+                    b.Property<int>("Category")
+                        .HasColumnType("int");
+
+                    b.Property<string>("DedupeKey")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("varchar(300)");
+
+                    b.Property<Guid?>("DocumentId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid?>("ParentId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<int?>("ResolvedDocumentType")
+                        .HasColumnType("int");
+
+                    b.Property<Guid?>("ResolvedEntityId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime?>("ReviewedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<Guid?>("ReviewedById")
+                        .HasColumnType("char(36)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("SubmittedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<Guid>("SubmittedById")
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("varchar(160)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DedupeKey")
+                        .IsUnique();
+
+                    b.HasIndex("SubmittedById", "Status");
+
+                    b.HasIndex("Status", "Category", "SubmittedAt");
+
+                    b.ToTable("TaxonomyProposals");
+                });
+
+            modelBuilder.Entity("USTHBStudy.Domain.Classification.UserContributionStats", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<int>("AgreedVotes")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("DocumentsAssigned")
+                        .HasColumnType("int");
+
+                    b.Property<long>("DownloadsAtLastPrompt")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("LastLoginAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime?>("LastPromptAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("QuotaBonusEarned")
+                        .HasColumnType("int");
+
+                    b.Property<int>("QuotaDownloadsUsed")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("QuotaWindowStart")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("ResolvedVotes")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("RewardDay")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("RewardsToday")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SkippedCount")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("SnoozedUntil")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("TasksAssigned")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TasksCompleted")
+                        .HasColumnType("int");
+
+                    b.Property<long>("TotalDownloads")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("ValidContributions")
+                        .HasColumnType("int");
+
+                    b.HasKey("UserId");
+
+                    b.ToTable("ContributionStats");
+                });
+
             modelBuilder.Entity("USTHBStudy.Domain.Contributions.Contribution", b =>
                 {
                     b.Property<Guid>("Id")
@@ -830,11 +1242,28 @@ namespace USTHBStudy.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("AcademicYearId")
                         .HasColumnType("char(36)");
 
+                    b.Property<string>("ClassificationReviewReason")
+                        .HasMaxLength(40)
+                        .HasColumnType("varchar(40)");
+
+                    b.Property<int>("ClassificationStatus")
+                        .HasColumnType("int");
+
+                    b.Property<long>("ClassificationVersion")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("ClassifiedAt")
+                        .HasColumnType("datetime(6)");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
 
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("datetime(6)");
+
+                    b.Property<Guid?>("DepartmentId")
+                        .HasColumnType("char(36)");
 
                     b.Property<string>("Description")
                         .HasMaxLength(4000)
@@ -872,7 +1301,7 @@ namespace USTHBStudy.Infrastructure.Persistence.Migrations
                         .HasMaxLength(120)
                         .HasColumnType("varchar(120)");
 
-                    b.Property<Guid>("ModuleId")
+                    b.Property<Guid?>("ModuleId")
                         .HasColumnType("char(36)");
 
                     b.Property<int?>("PageCount")
@@ -911,6 +1340,9 @@ namespace USTHBStudy.Infrastructure.Persistence.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("varchar(500)");
 
+                    b.Property<Guid?>("SpecialtyId")
+                        .HasColumnType("char(36)");
+
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
@@ -932,10 +1364,24 @@ namespace USTHBStudy.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("UploadedById")
                         .HasColumnType("char(36)");
 
+                    b.Property<int>("VerificationStatus")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("VerifiedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<Guid?>("VerifiedById")
+                        .HasColumnType("char(36)");
+
                     b.Property<long>("ViewCount")
                         .HasColumnType("bigint");
 
+                    b.Property<int>("VotingRound")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("DepartmentId");
 
                     b.HasIndex("FileHashSha256");
 
@@ -946,7 +1392,11 @@ namespace USTHBStudy.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("SolutionForDocumentId");
 
+                    b.HasIndex("SpecialtyId");
+
                     b.HasIndex("AcademicYearId", "Type");
+
+                    b.HasIndex("ClassificationStatus", "VerificationStatus", "CreatedAt");
 
                     b.HasIndex("ModuleId", "Type", "Status");
 
@@ -1585,6 +2035,104 @@ namespace USTHBStudy.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("USTHBStudy.Domain.Classification.ClassificationAssignment", b =>
+                {
+                    b.HasOne("USTHBStudy.Domain.Documents.Document", "Document")
+                        .WithMany()
+                        .HasForeignKey("DocumentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("USTHBStudy.Domain.Classification.ClassificationTask", "Task")
+                        .WithMany("Assignments")
+                        .HasForeignKey("TaskId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("USTHBStudy.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Document");
+
+                    b.Navigation("Task");
+                });
+
+            modelBuilder.Entity("USTHBStudy.Domain.Classification.ClassificationTask", b =>
+                {
+                    b.HasOne("USTHBStudy.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("USTHBStudy.Domain.Classification.ClassificationVote", b =>
+                {
+                    b.HasOne("USTHBStudy.Domain.Academic.AcademicYear", null)
+                        .WithMany()
+                        .HasForeignKey("AcademicYearId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("USTHBStudy.Domain.Academic.Department", null)
+                        .WithMany()
+                        .HasForeignKey("DepartmentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("USTHBStudy.Domain.Documents.Document", "Document")
+                        .WithMany()
+                        .HasForeignKey("DocumentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("USTHBStudy.Domain.Academic.Session", null)
+                        .WithMany()
+                        .HasForeignKey("SessionId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("USTHBStudy.Domain.Academic.Specialty", null)
+                        .WithMany()
+                        .HasForeignKey("SpecialtyId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("USTHBStudy.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Document");
+                });
+
+            modelBuilder.Entity("USTHBStudy.Domain.Classification.ExternalLoginTicket", b =>
+                {
+                    b.HasOne("USTHBStudy.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("USTHBStudy.Domain.Classification.TaxonomyProposal", b =>
+                {
+                    b.HasOne("USTHBStudy.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("SubmittedById")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("USTHBStudy.Domain.Classification.UserContributionStats", b =>
+                {
+                    b.HasOne("USTHBStudy.Infrastructure.Identity.ApplicationUser", null)
+                        .WithOne()
+                        .HasForeignKey("USTHBStudy.Domain.Classification.UserContributionStats", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("USTHBStudy.Domain.Contributions.Contribution", b =>
                 {
                     b.HasOne("USTHBStudy.Infrastructure.Identity.ApplicationUser", null)
@@ -1601,11 +2149,15 @@ namespace USTHBStudy.Infrastructure.Persistence.Migrations
                         .HasForeignKey("AcademicYearId")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("USTHBStudy.Domain.Academic.Department", "Department")
+                        .WithMany()
+                        .HasForeignKey("DepartmentId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("USTHBStudy.Domain.Academic.Module", "Module")
                         .WithMany()
                         .HasForeignKey("ModuleId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("USTHBStudy.Domain.Academic.Session", "Session")
                         .WithMany()
@@ -1617,13 +2169,22 @@ namespace USTHBStudy.Infrastructure.Persistence.Migrations
                         .HasForeignKey("SolutionForDocumentId")
                         .OnDelete(DeleteBehavior.Restrict);
 
+                    b.HasOne("USTHBStudy.Domain.Academic.Specialty", "Specialty")
+                        .WithMany()
+                        .HasForeignKey("SpecialtyId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("AcademicYear");
+
+                    b.Navigation("Department");
 
                     b.Navigation("Module");
 
                     b.Navigation("Session");
 
                     b.Navigation("SolutionForDocument");
+
+                    b.Navigation("Specialty");
                 });
 
             modelBuilder.Entity("USTHBStudy.Domain.Documents.DocumentReport", b =>
@@ -1778,6 +2339,11 @@ namespace USTHBStudy.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("USTHBStudy.Domain.Academic.University", b =>
                 {
                     b.Navigation("Faculties");
+                });
+
+            modelBuilder.Entity("USTHBStudy.Domain.Classification.ClassificationTask", b =>
+                {
+                    b.Navigation("Assignments");
                 });
 
             modelBuilder.Entity("USTHBStudy.Domain.Documents.Document", b =>

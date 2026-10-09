@@ -55,8 +55,8 @@ appsettings.*.local.json
 secrets.json
 
 # ---------- Local file storage (dev) ----------
-storage/
-_storage/
+/storage/
+**/_storage/
 uploads/
 
 # ---------- IDE / OS ----------

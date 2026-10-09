@@ -58,3 +58,19 @@ As of Phase 5, **#1–#7 are all implemented and tested** (`DownloadTests`, `Aut
 - The platform does **not** implement or encourage copyright circumvention (§40). Documents carry
   `RightsStatus` + `Source` + `PermissionNotes`; a takedown/report path exists (§39, §40).
 - Premium content is **not** offline-cached by the PWA unless the authorization model explicitly allows it (§50).
+
+## Community classification & Google sign-in
+
+* Voting abuse: unique `(document, user, round)` indexes + service checks; atomic document lock; daily reward
+  cap; minimum answer delay; uploader excluded; suspended users refused at the action.
+* Taxonomy: proposals are pending records (no entity, not searchable, invisible to other users, submitter email
+  never shown to students); validated/normalised, capped per user; approval needs `Taxonomy.Review`.
+* Content exposure: only `Published` documents are public; a pending/unclassified preview is reachable only
+  through the caller's own open assignment (`GET assignments/{id}/preview`) or by `Classification.Review`.
+* Quota: only restricts; atomic SQL; Premium/role/suspension rules untouched; counters are server-side only.
+* Frontend BFF `/bff/classification/*`: fixed allow-list, `x-requested-with` guard on POST (on top of SameSite=Lax),
+  tokens stay in HttpOnly cookies. `/dl/*` ignores prefetch and the buttons are plain links (GET has side effects).
+* Google: PKCE + state + nonce, protected HttpOnly flow cookie, JWKS signature + iss/aud/exp/nonce validation,
+  `email_verified` required, no auto-link to unconfirmed or privileged accounts, single-use hashed tickets,
+  open-redirect-safe return paths, secrets only in user-secrets / environment variables.
+* Secrets added: `Authentication:Google:ClientSecret` (user-secrets / env).

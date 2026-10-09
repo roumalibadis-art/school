@@ -5,9 +5,11 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using USTHBStudy.Application.Abstractions;
+using USTHBStudy.Application.Classification;
 using USTHBStudy.Application.Academic;
 using USTHBStudy.Application.Admin;
 using USTHBStudy.Application.Auth;
+using USTHBStudy.Application.Auth.Google;
 using USTHBStudy.Application.Contributions;
 using USTHBStudy.Application.Documents;
 using USTHBStudy.Application.Notifications;
@@ -17,6 +19,8 @@ using USTHBStudy.Application.Subscriptions;
 using USTHBStudy.Infrastructure.Academic;
 using USTHBStudy.Infrastructure.Admin;
 using USTHBStudy.Infrastructure.Auth;
+using USTHBStudy.Infrastructure.Auth.Google;
+using USTHBStudy.Infrastructure.Classification;
 using USTHBStudy.Infrastructure.Contributions;
 using USTHBStudy.Infrastructure.Documents;
 using USTHBStudy.Infrastructure.Notifications;
@@ -66,6 +70,20 @@ public static class DependencyInjection
         services.AddScoped<IContributionService, ContributionService>();
         services.AddScoped<IReportService, ReportService>();
         services.AddScoped<IAdminDashboardService, AdminDashboardService>();
+
+        services.AddScoped<IClassificationSettingsService, ClassificationSettingsService>();
+        services.AddScoped<IClassificationService, ClassificationService>();
+        services.AddScoped<IClassificationAdminService, ClassificationAdminService>();
+        services.AddScoped<ITaxonomyProposalService, TaxonomyProposalService>();
+        services.AddScoped<QuotaExemption>();
+        services.AddScoped<DownloadQuotaService>();
+        services.AddScoped<IDownloadQuotaService>(sp => sp.GetRequiredService<DownloadQuotaService>());
+        services.AddScoped<IContributionTracker>(sp => sp.GetRequiredService<DownloadQuotaService>());
+
+        services.AddOptions<GoogleOptions>().Bind(configuration.GetSection(GoogleOptions.SectionName));
+        services.AddHttpClient<IGoogleOidcClient, GoogleOidcClient>(c => c.Timeout = TimeSpan.FromSeconds(10));
+        services.AddScoped<IExternalAccountService, ExternalAccountService>();
+        services.AddScoped<IExternalLoginTicketService, ExternalLoginTicketService>();
 
         AddAcademic(services);
 
