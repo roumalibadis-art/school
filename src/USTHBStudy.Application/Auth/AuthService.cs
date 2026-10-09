@@ -68,6 +68,19 @@ public sealed class AuthService : IAuthService
         return await IssueAsync(user, ip, ct);
     }
 
+    public async Task<AuthResult> SignInExternalAsync(Guid userId, string? ip, CancellationToken ct = default)
+    {
+        var user = await _identity.FindByIdAsync(userId, ct)
+                   ?? throw new UnauthorizedAppException("Invalid sign-in.");
+        if (!user.IsActive)
+        {
+            throw new ForbiddenAppException("This account is disabled.");
+        }
+
+        await RecordLoginAsync(user.Id, ct);
+        return await IssueAsync(user, ip, ct);
+    }
+
     private async Task RecordLoginAsync(Guid userId, CancellationToken ct)
     {
         if (_tracker is not null)

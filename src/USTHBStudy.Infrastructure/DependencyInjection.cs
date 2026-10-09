@@ -9,6 +9,7 @@ using USTHBStudy.Application.Classification;
 using USTHBStudy.Application.Academic;
 using USTHBStudy.Application.Admin;
 using USTHBStudy.Application.Auth;
+using USTHBStudy.Application.Auth.Google;
 using USTHBStudy.Application.Contributions;
 using USTHBStudy.Application.Documents;
 using USTHBStudy.Application.Notifications;
@@ -18,6 +19,7 @@ using USTHBStudy.Application.Subscriptions;
 using USTHBStudy.Infrastructure.Academic;
 using USTHBStudy.Infrastructure.Admin;
 using USTHBStudy.Infrastructure.Auth;
+using USTHBStudy.Infrastructure.Auth.Google;
 using USTHBStudy.Infrastructure.Classification;
 using USTHBStudy.Infrastructure.Contributions;
 using USTHBStudy.Infrastructure.Documents;
@@ -76,6 +78,11 @@ public static class DependencyInjection
         services.AddScoped<DownloadQuotaService>();
         services.AddScoped<IDownloadQuotaService>(sp => sp.GetRequiredService<DownloadQuotaService>());
         services.AddScoped<IContributionTracker>(sp => sp.GetRequiredService<DownloadQuotaService>());
+
+        services.AddOptions<GoogleOptions>().Bind(configuration.GetSection(GoogleOptions.SectionName));
+        services.AddHttpClient<IGoogleOidcClient, GoogleOidcClient>(c => c.Timeout = TimeSpan.FromSeconds(10));
+        services.AddScoped<IExternalAccountService, ExternalAccountService>();
+        services.AddScoped<IExternalLoginTicketService, ExternalLoginTicketService>();
 
         AddAcademic(services);
 

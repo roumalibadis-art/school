@@ -12,5 +12,8 @@ public interface IAuthService
 
     Task LogoutAsync(LogoutRequest request, string? ip, CancellationToken ct = default);
 
+    /// <summary>Issues the normal token pair for a user already authenticated by a trusted external provider (Google).</summary>
+    Task<AuthResult> SignInExternalAsync(Guid userId, string? ip, CancellationToken ct = default);
+
     Task<CurrentUserDto> GetCurrentAsync(Guid userId, CancellationToken ct = default);
 }
