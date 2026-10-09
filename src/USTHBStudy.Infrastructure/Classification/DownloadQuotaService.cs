@@ -13,11 +13,13 @@ public sealed class DownloadQuotaService : IDownloadQuotaService, IContributionT
 
     private readonly AppDbContext _db;
     private readonly IDateTimeProvider _clock;
+    private readonly QuotaExemption _exemption;
 
-    public DownloadQuotaService(AppDbContext db, IDateTimeProvider clock)
+    public DownloadQuotaService(AppDbContext db, IDateTimeProvider clock, QuotaExemption exemption)
     {
         _db = db;
         _clock = clock;
+        _exemption = exemption;
     }
 
     public async Task RecordLoginAsync(Guid userId, CancellationToken ct = default)
@@ -38,7 +40,7 @@ public sealed class DownloadQuotaService : IDownloadQuotaService, IContributionT
         }
 
         var stats = await _db.ContributionStats.AsNoTracking().FirstAsync(s => s.UserId == userId, ct);
-        return BuildStatus(settings, stats, exempt: false);
+        return BuildStatus(settings, stats, await _exemption.IsExemptAsync(userId, ct));
     }
 
     public async Task ConsumeDownloadAsync(Guid userId, bool exempt, CancellationToken ct = default)

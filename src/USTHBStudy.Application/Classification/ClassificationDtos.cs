@@ -121,13 +121,15 @@ public sealed record OptionDto(Guid Id, string Name, Guid? ParentId, bool Pendin
 
 public sealed record DocumentTypeOptionDto(string Value, string Label);
 
+public sealed record PendingProposalOptionDto(Guid Id, string Name, string Category, Guid? ParentId);
+
 public sealed record ClassificationOptionsDto(
     IReadOnlyList<OptionDto> Departments,
     IReadOnlyList<OptionDto> Specialties,
     IReadOnlyList<OptionDto> AcademicYears,
     IReadOnlyList<OptionDto> Sessions,
     IReadOnlyList<DocumentTypeOptionDto> DocumentTypes,
-    IReadOnlyList<OptionDto> MyPendingProposals);
+    IReadOnlyList<PendingProposalOptionDto> MyPendingProposals);
 
 public sealed record MyContributionsDto(
     int TasksAssigned,

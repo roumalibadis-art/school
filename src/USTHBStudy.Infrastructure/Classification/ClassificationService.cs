@@ -22,10 +22,12 @@ public sealed class ClassificationService : IClassificationService
     private readonly IDateTimeProvider _clock;
     private readonly IFileStorageService _storage;
     private readonly IAuditLogger _audit;
+    private readonly QuotaExemption _exemption;
 
     public ClassificationService(
-        AppDbContext db, IDateTimeProvider clock, IFileStorageService storage, IAuditLogger audit)
+        AppDbContext db, IDateTimeProvider clock, IFileStorageService storage, IAuditLogger audit, QuotaExemption exemption)
     {
+        _exemption = exemption;
         _db = db;
         _clock = clock;
         _storage = storage;
@@ -39,7 +41,7 @@ public sealed class ClassificationService : IClassificationService
         var settings = await ClassificationSettingsStore.LoadAsync(_db, _clock, ct);
         await StatsOps.EnsureAsync(_db, _clock, userId, ct);
         var stats = await _db.ContributionStats.AsNoTracking().FirstAsync(s => s.UserId == userId, ct);
-        var quota = DownloadQuotaService.BuildStatus(settings, stats, exempt: false);
+        var quota = DownloadQuotaService.BuildStatus(settings, stats, await _exemption.IsExemptAsync(userId, ct));
         var now = _clock.UtcNow;
 
         var open = await OpenTaskAsync(userId, now, ct);
@@ -425,7 +427,7 @@ public sealed class ClassificationService : IClassificationService
         return (new VoteResultDto(
             document.Id, "Recorded", vote.Rewarded, bonus, remaining,
             task.Status == ClassificationTaskStatus.Completed,
-            DownloadQuotaService.BuildStatus(settings, stats, exempt: false)), audit);
+            DownloadQuotaService.BuildStatus(settings, stats, await _exemption.IsExemptAsync(userId, ct))), audit);
     }
 
     private async Task ApplyFieldsAsync(ClassificationVote vote, SubmitVoteRequest r, CancellationToken ct)
@@ -626,10 +628,11 @@ public sealed class ClassificationService : IClassificationService
         var mine = await _db.TaxonomyProposals.AsNoTracking()
             .Where(p => p.SubmittedById == userId && p.Status == ProposalStatus.Pending)
             .OrderByDescending(p => p.SubmittedAt).Take(100)
-            .Select(p => new OptionDto(p.Id, p.Value, p.ParentId, true, p.Id))
+            .Select(p => new { p.Id, p.Value, p.Category, p.ParentId })
             .ToListAsync(ct);
+        var mineDtos = mine.Select(p => new PendingProposalOptionDto(p.Id, p.Value, p.Category.ToString(), p.ParentId)).ToArray();
 
-        return new ClassificationOptionsDto(departments, specialties, years, sessions, DocumentTypeLabels.All, mine);
+        return new ClassificationOptionsDto(departments, specialties, years, sessions, DocumentTypeLabels.All, mineDtos);
     }
 
     public async Task<MyContributionsDto> GetMyContributionsAsync(Guid userId, CancellationToken ct = default)
@@ -644,7 +647,7 @@ public sealed class ClassificationService : IClassificationService
         var s = await _db.ContributionStats.AsNoTracking().FirstAsync(x => x.UserId == userId, ct);
         return new MyContributionsDto(
             s.TasksAssigned, s.TasksCompleted, s.ValidContributions, s.SkippedCount, s.ResolvedVotes, s.AgreedVotes,
-            DownloadQuotaService.BuildStatus(settings, s, exempt: false));
+            DownloadQuotaService.BuildStatus(settings, s, await _exemption.IsExemptAsync(userId, ct)));
     }
 
     public async Task<DocumentContent> OpenAssignmentPreviewAsync(Guid userId, Guid assignmentId, CancellationToken ct = default)

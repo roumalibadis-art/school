@@ -42,7 +42,8 @@ public class TaxonomyProposalTests
 
         // The submitter sees their own pending value, flagged as pending, so they can keep classifying.
         var mine = Data(await voter.Client.GetStringAsync("/api/classification/options")).GetProperty("myPendingProposals");
-        mine.EnumerateArray().Should().ContainSingle(p => p.GetProperty("pending").GetBoolean());
+        mine.EnumerateArray().Should().ContainSingle(p => p.GetProperty("category").GetString() == "Specialty"
+                                                            && p.GetProperty("name").GetString() == "Génie Logiciel");
     }
 
     [Theory]

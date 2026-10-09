@@ -206,3 +206,35 @@ internal static class ActiveUser
         }
     }
 }
+
+/// <summary>
+/// Who is outside the free-tier quota: active Premium members and staff who manage documents. Single place for the
+/// rule so the download path and every screen that reports the quota agree.
+/// </summary>
+public sealed class QuotaExemption
+{
+    private readonly AppDbContext _db;
+    private readonly IAccessControlService _access;
+    private readonly ICurrentUser _currentUser;
+
+    public QuotaExemption(AppDbContext db, IAccessControlService access, ICurrentUser currentUser)
+    {
+        _db = db;
+        _access = access;
+        _currentUser = currentUser;
+    }
+
+    public async Task<bool> IsExemptAsync(Guid userId, CancellationToken ct)
+    {
+        if (_currentUser.UserId == userId
+            && (_currentUser.HasPermission(USTHBStudy.Application.Authorization.Permissions.Documents.Update)
+                || _currentUser.HasPermission(USTHBStudy.Application.Authorization.Permissions.Documents.Publish)))
+        {
+            return true;
+        }
+
+        var user = await _db.Users.AsNoTracking().Where(u => u.Id == userId)
+            .Select(u => new AccessSubject(u.IsActive, u.IsPremium, u.PremiumExpiresAt)).FirstOrDefaultAsync(ct);
+        return user is not null && _access.IsPremiumActive(user);
+    }
+}

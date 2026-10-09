@@ -284,6 +284,12 @@ public class ContributionAccessTests
             (await member.DownloadAsync(slug)).StatusCode.Should().Be(HttpStatusCode.OK);
             (await h.Admin.GetAsync($"/api/documents/{slug}/download")).StatusCode.Should().Be(HttpStatusCode.OK);
         }
+
+        // The UI is told so, and never shows them an allowance counter.
+        (await member.MeAsync()).GetProperty("quota").GetProperty("exempt").GetBoolean().Should().BeTrue();
+        (await new Voter(h.Admin, "admin", Guid.Empty).MeAsync()).GetProperty("quota").GetProperty("exempt").GetBoolean().Should().BeTrue();
+        var free = await h.NewVoterAsync();
+        (await free.MeAsync()).GetProperty("quota").GetProperty("exempt").GetBoolean().Should().BeFalse();
     }
 
     // ------------------------------------------------------------------ no bypass (test 14)

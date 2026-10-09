@@ -75,6 +75,7 @@ public static class DependencyInjection
         services.AddScoped<IClassificationService, ClassificationService>();
         services.AddScoped<IClassificationAdminService, ClassificationAdminService>();
         services.AddScoped<ITaxonomyProposalService, TaxonomyProposalService>();
+        services.AddScoped<QuotaExemption>();
         services.AddScoped<DownloadQuotaService>();
         services.AddScoped<IDownloadQuotaService>(sp => sp.GetRequiredService<DownloadQuotaService>());
         services.AddScoped<IContributionTracker>(sp => sp.GetRequiredService<DownloadQuotaService>());
